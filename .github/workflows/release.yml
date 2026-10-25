@@ -1,6 +1,6 @@
 name: Release
 
-# The signed APK and the macOS app are attached by the maintainer; this job adds the
+# The signed APK and the macOS app are attached by scripts/release.sh; this job adds the
 # Windows host, which needs the MSVC toolchain of a Windows runner.
 on:
   release:
@@ -28,10 +28,12 @@ jobs:
           Copy-Item windows/README.md, LICENSE $name/
           Compress-Archive -Path $name -DestinationPath "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
+          # Fixed name for releases/latest/download/AnyDisplay-windows-x64.zip.
+          Copy-Item "$name.zip" AnyDisplay-windows-x64.zip
       - name: Upload
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
           $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
-          gh release upload "${{ github.event.release.tag_name }}" "$name.zip" "$name.zip.sha256" --clobber
+          gh release upload "${{ github.event.release.tag_name }}" "$name.zip" "$name.zip.sha256" AnyDisplay-windows-x64.zip --clobber

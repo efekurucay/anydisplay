@@ -27,6 +27,15 @@ Include:
   `tools/anydisplay_ref.py vectors > tools/vectors.json`.
 - Follow the style of the surrounding code.
 
+## Releasing (maintainers)
+
+1. Set the version in `android/app/build.gradle.kts` (`versionName`, `versionCode`) and
+   `windows/Cargo.toml`, and commit.
+2. Write the release notes to a file, then run `scripts/release.sh vX.Y.Z NOTES.md`. It needs the
+   Android release key configured through Gradle properties (`anydisplay.storeFile`,
+   `anydisplay.storePassword`, `anydisplay.keyAlias`, `anydisplay.keyPassword`).
+3. The release workflow adds the Windows zip a few minutes later.
+
 ## Security issues
 
 Do not open a public issue for a vulnerability. Report it privately through GitHub's

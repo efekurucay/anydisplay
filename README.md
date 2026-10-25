@@ -85,13 +85,14 @@ The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](doc
 
 ## Download
 
-Get the files from the [latest release](https://github.com/efekurucay/anydisplay/releases/latest):
-
-| File | For |
+| Download | For |
 |---|---|
-| `AnyDisplay-<version>.apk` | The Android phone or tablet |
-| `AnyDisplay-<version>-macOS.zip` | Mac (Apple silicon and Intel, macOS 14+) |
-| `AnyDisplay-<version>-windows-x64.zip` | Windows 10 (1809) / 11, experimental |
+| [**AnyDisplay.apk**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay.apk) | The Android phone or tablet (Android 8.0+) |
+| [**AnyDisplay-macOS.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
+| [**AnyDisplay-windows-x64.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip) | Windows 10 (1809) / 11, experimental |
+
+These links always serve the newest version. Checksums and older versions are on the
+[releases page](https://github.com/efekurucay/anydisplay/releases).
 
 1. **Android:** open the APK on the device and allow installing from that source. For USB, also
    turn on **USB debugging** in the developer options.
