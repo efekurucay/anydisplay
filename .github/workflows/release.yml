@@ -1,0 +1,37 @@
+name: Release
+
+# The signed APK and the macOS app are attached by the maintainer; this job adds the
+# Windows host, which needs the MSVC toolchain of a Windows runner.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows host
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: windows
+        run: cargo build --release
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
+          New-Item -ItemType Directory $name | Out-Null
+          Copy-Item windows/target/release/anydisplay-win.exe $name/
+          Copy-Item windows/README.md, LICENSE $name/
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+          (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
+          gh release upload "${{ github.event.release.tag_name }}" "$name.zip" "$name.zip.sha256" --clobber

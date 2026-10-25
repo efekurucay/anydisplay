@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host
+      placeholder: macOS 15.5 (M2) / Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Android device
+      placeholder: Samsung Galaxy Tab S9, Android 14
+    validations:
+      required: true
+  - type: dropdown
+    id: link
+    attributes:
+      label: Connection
+      options: [USB, Wi-Fi]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Host output with `-v`, and `adb logcat -s AnyDisplay` from the device.
+      render: text

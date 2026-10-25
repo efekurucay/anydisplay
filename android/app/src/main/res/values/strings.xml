@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AnyDisplay</string>
+
+    <string name="status_waiting">Waiting for a computer</string>
+    <string name="status_waiting_detail">Start AnyDisplay on your Mac or Windows PC. It finds this device on the same Wi-Fi, or over USB.</string>
+    <string name="status_handshake">Connecting…</string>
+    <string name="status_pairing">Pairing with %1$s</string>
+    <string name="status_pairing_detail">Compare the code on both screens.</string>
+    <string name="status_connected">Connected to %1$s</string>
+    <string name="status_stopped">Not listening</string>
+    <string name="status_stopped_detail">The connection service is stopped.</string>
+    <string name="last_error">Last session: %1$s</string>
+    <string name="open_display">Open display</string>
+    <string name="start_service">Start</string>
+
+    <string name="wifi_title">Wi-Fi</string>
+    <string name="wifi_detail">Keep this device on the same network as the computer. AnyDisplay on the computer lists it automatically, or you can enter this address:</string>
+    <string name="wifi_none">No Wi-Fi address. Connect to Wi-Fi or use USB.</string>
+    <string name="usb_title">USB</string>
+    <string name="usb_detail">1. Turn on USB debugging in Developer options.\n2. Connect the cable and allow debugging on this device.\n3. AnyDisplay on the computer forwards the port and connects. To do it by hand:</string>
+    <string name="usb_command">adb forward tcp:47820 tcp:47820</string>
+    <string name="device_footer">Device ID %1$s · version %2$s</string>
+    <string name="copied">Copied</string>
+
+    <string name="paired_computers">Paired computers</string>
+    <string name="paired_empty">No paired computers yet. A computer is paired the first time it connects over Wi-Fi.</string>
+    <string name="paired_detail">%1$s · paired %2$s · last used %3$s</string>
+    <string name="just_now">just now</string>
+    <string name="forget">Forget</string>
+    <string name="forget_title">Forget %1$s?</string>
+    <string name="forget_message">The computer has to pair again with a code next time it connects over Wi-Fi.</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="settings">Settings</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="pairing_title">Pair with %1$s?</string>
+    <string name="pairing_message">Check that %1$s shows the same code, then accept on both devices.</string>
+    <string name="pairing_notif_title">Pair with %1$s?</string>
+    <string name="pairing_notif_text">Code %1$s. Accept only if the computer shows the same code.</string>
+
+    <string name="channel_connection">Connection</string>
+    <string name="channel_pairing">Pairing requests</string>
+    <string name="notif_waiting">AnyDisplay is waiting for a computer</string>
+    <string name="notif_usb_only">USB only (no Wi-Fi address)</string>
+    <string name="notif_handshake">AnyDisplay: connecting</string>
+    <string name="notif_pairing">Pair with %1$s?</string>
+    <string name="notif_pairing_text">Open AnyDisplay to compare the code</string>
+    <string name="notif_connected">Extending %1$s</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="stop_service">Stop</string>
+    <string name="link_usb_adb">USB</string>
+    <string name="link_usb_accessory">USB accessory</string>
+    <string name="link_wifi">Wi-Fi</string>
+    <string name="mode_plain">unencrypted cable link</string>
+    <string name="mode_encrypted">encrypted</string>
+
+    <string name="disconnected">Disconnected</string>
+    <string name="still_connected">Still connected. Reopen the display from AnyDisplay or the notification.</string>
+    <string name="disconnect_title">Disconnect from %1$s?</string>
+    <string name="touch_mode_direct">Direct touch</string>
+    <string name="touch_mode_trackpad">Trackpad</string>
+    <string name="touch_mode_pen">Pen only</string>
+    <string name="menu_toggle">Menu</string>
+    <string name="menu_keyboard">Keyboard</string>
+    <string name="menu_undo">Undo</string>
+    <string name="menu_redo">Redo</string>
+    <string name="menu_copy">Copy</string>
+    <string name="menu_paste">Paste</string>
+    <string name="menu_escape">Escape</string>
+    <string name="menu_touch_mode">Touch mode</string>
+    <string name="waiting_for_video">Waiting for video…</string>
+    <string name="notification_permission">Allow notifications so AnyDisplay can ask you to confirm pairing codes in the background.</string>
+
+    <!-- Settings -->
+    <string name="pref_cat_display">Display</string>
+    <string name="pref_cat_input">Input</string>
+    <string name="pref_cat_connection">Connection</string>
+    <string name="pref_scale">Resolution</string>
+    <string name="pref_refresh">Refresh rate</string>
+    <string name="pref_codec">Video codec</string>
+    <string name="pref_bitrate">Bitrate</string>
+    <string name="pref_quality">Quality</string>
+    <string name="pref_hidpi">HiDPI (Retina)</string>
+    <string name="pref_hidpi_summary">Desktop uses half the pixel size for sharp text</string>
+    <string name="pref_orientation">Orientation</string>
+    <string name="pref_mirror">Mirror instead of extend</string>
+    <string name="pref_mirror_summary">Show the main display instead of adding a new one</string>
+    <string name="pref_audio">Play computer audio</string>
+    <string name="pref_client_cursor">Draw cursor on this device</string>
+    <string name="pref_client_cursor_summary">Lower cursor latency when the computer supports it</string>
+    <string name="pref_stats">Show latency and FPS overlay</string>
+    <string name="pref_touch_mode">Default touch mode</string>
+    <string name="pref_palm">Palm rejection</string>
+    <string name="pref_palm_summary">Ignore fingers while a stylus is near the screen</string>
+    <string name="pref_auto_start">Open the display when a computer connects</string>
+    <string name="pref_paired">Paired computers</string>
+    <string name="pref_applies_next">Changes apply to the next stream request</string>
+</resources>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:title="@string/pref_cat_display" app:iconSpaceReserved="false">
+        <ListPreference
+            app:defaultValue="1.0"
+            app:entries="@array/scale_entries"
+            app:entryValues="@array/scale_values"
+            app:iconSpaceReserved="false"
+            app:key="scale"
+            app:title="@string/pref_scale"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:defaultValue="60"
+            app:entries="@array/refresh_entries"
+            app:entryValues="@array/refresh_values"
+            app:iconSpaceReserved="false"
+            app:key="refresh"
+            app:title="@string/pref_refresh"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:defaultValue="landscape"
+            app:entries="@array/orientation_entries"
+            app:entryValues="@array/orientation_values"
+            app:iconSpaceReserved="false"
+            app:key="orientation"
+            app:title="@string/pref_orientation"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="hidpi"
+            app:summary="@string/pref_hidpi_summary"
+            app:title="@string/pref_hidpi" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="mirror"
+            app:summary="@string/pref_mirror_summary"
+            app:title="@string/pref_mirror" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="stats_overlay"
+            app:title="@string/pref_stats" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_cat_connection" app:iconSpaceReserved="false">
+        <ListPreference
+            app:defaultValue="auto"
+            app:entries="@array/codec_entries"
+            app:entryValues="@array/codec_values"
+            app:iconSpaceReserved="false"
+            app:key="codec"
+            app:title="@string/pref_codec"
+            app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            app:defaultValue="0"
+            app:entries="@array/bitrate_entries"
+            app:entryValues="@array/bitrate_values"
+            app:iconSpaceReserved="false"
+            app:key="bitrate"
+            app:title="@string/pref_bitrate"
+            app:useSimpleSummaryProvider="true" />
+        <SeekBarPreference
+            android:max="100"
+            app:defaultValue="80"
+            app:iconSpaceReserved="false"
+            app:key="quality"
+            app:min="1"
+            app:showSeekBarValue="true"
+            app:title="@string/pref_quality" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="audio"
+            app:title="@string/pref_audio" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="auto_start"
+            app:title="@string/pref_auto_start" />
+        <Preference
+            app:iconSpaceReserved="false"
+            app:key="paired"
+            app:title="@string/pref_paired" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_cat_input" app:iconSpaceReserved="false">
+        <ListPreference
+            app:defaultValue="direct"
+            app:entries="@array/touch_mode_entries"
+            app:entryValues="@array/touch_mode_values"
+            app:iconSpaceReserved="false"
+            app:key="touch_mode"
+            app:title="@string/pref_touch_mode"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="palm_rejection"
+            app:summary="@string/pref_palm_summary"
+            app:title="@string/pref_palm" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="client_cursor"
+            app:summary="@string/pref_client_cursor_summary"
+            app:title="@string/pref_client_cursor" />
+    </PreferenceCategory>
+</PreferenceScreen>

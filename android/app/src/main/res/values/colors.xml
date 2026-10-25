@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand">#6A4FD8</color>
+    <color name="brand_dark">#CDBDFF</color>
+    <color name="overlay_scrim">#B3000000</color>
+    <color name="ok">#2E7D32</color>
+    <color name="ok_dark">#81C784</color>
+</resources>

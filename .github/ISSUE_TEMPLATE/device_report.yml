@@ -1,0 +1,25 @@
+name: Device report
+description: Tell us how AnyDisplay works on your hardware, good or bad
+labels: [device-report]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Android device
+      placeholder: Samsung Galaxy Tab S9, Android 14
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host
+      placeholder: Windows 11 24H2, RTX 4060 / macOS 15.5, M2
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+      description: Connection type, codec, frame rate and latency from the stats overlay, and whether touch, pen, audio and clipboard work.
+    validations:
+      required: true

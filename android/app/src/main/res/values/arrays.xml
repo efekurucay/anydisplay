@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="scale_entries"><item>Native</item><item>3/4</item><item>1/2</item></string-array>
+    <string-array name="scale_values"><item>1.0</item><item>0.75</item><item>0.5</item></string-array>
+    <string-array name="refresh_entries"><item>30 Hz</item><item>60 Hz</item><item>90 Hz</item><item>120 Hz</item></string-array>
+    <string-array name="refresh_values"><item>30</item><item>60</item><item>90</item><item>120</item></string-array>
+    <string-array name="codec_entries"><item>Automatic (HEVC when hardware supports it)</item><item>H.264</item><item>HEVC (H.265)</item></string-array>
+    <string-array name="codec_values"><item>auto</item><item>h264</item><item>hevc</item></string-array>
+    <string-array name="bitrate_entries">
+        <item>Automatic</item><item>5 Mbps</item><item>10 Mbps</item><item>15 Mbps</item><item>20 Mbps</item>
+        <item>30 Mbps</item><item>40 Mbps</item><item>50 Mbps</item><item>60 Mbps</item><item>80 Mbps</item>
+    </string-array>
+    <string-array name="bitrate_values">
+        <item>0</item><item>5000</item><item>10000</item><item>15000</item><item>20000</item>
+        <item>30000</item><item>40000</item><item>50000</item><item>60000</item><item>80000</item>
+    </string-array>
+    <string-array name="orientation_entries"><item>Landscape</item><item>Portrait</item><item>Follow device rotation</item></string-array>
+    <string-array name="orientation_values"><item>landscape</item><item>portrait</item><item>auto</item></string-array>
+    <string-array name="touch_mode_entries"><item>Direct touch</item><item>Trackpad</item><item>Pen only</item></string-array>
+    <string-array name="touch_mode_values"><item>direct</item><item>trackpad</item><item>pen</item></string-array>
+</resources>
