@@ -188,17 +188,19 @@ tools/.venv/bin/python tools/anydisplay_ref.py client                 # acts as 
 
 AnyDisplay is young. What has been tested:
 
-- **Android client ↔ Mac host:** tested end to end on real hardware over USB and Wi-Fi, including
-  pairing, encryption, touch input, audio and clipboard.
-- **Windows host:** passes its unit and protocol tests and builds for `x86_64-pc-windows-msvc`,
-  but has not been run on Windows hardware yet. Reports are very welcome.
+- **Android client ↔ Mac host:** tested end to end on real hardware (Huawei P30 Pro, MacBook Pro)
+  over USB and Wi-Fi: pairing, encryption, video and touch. Audio, cursor and clipboard were each
+  verified against the reference implementation.
+- **Windows host:** builds and passes its unit and protocol tests on a Windows CI runner, but has
+  not been tried with a real device yet. Reports are very welcome.
 - **Pen input:** verified with on-device tests that use synthetic stylus events. It still needs a
   test with a real stylus device.
 - **USB accessory (AOAP) transport:** implemented but untested.
 
 ## Roadmap
 
-- Signed release builds (APK, notarized `.app`, Windows installer)
+- Notarized macOS app and a Windows installer
+- Google Play and F-Droid listings
 - Linux host
 - Several devices connected to one computer at the same time
 - iPad client

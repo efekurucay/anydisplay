@@ -21,7 +21,7 @@ use anyhow::{anyhow, bail, Context};
 use std::collections::VecDeque;
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
@@ -34,6 +34,9 @@ const LIVENESS_TIMEOUT: Duration = Duration::from_secs(5);
 const SETUP_TIMEOUT: Duration = Duration::from_secs(10);
 const TICK: Duration = Duration::from_millis(20);
 const CLIPBOARD_POLL: Duration = Duration::from_millis(500);
+/// The reader wakes this often to check whether the session ended. Windows does not wake a
+/// blocked `recv` on `shutdown`, so without it the reader waits for the peer (or TCP) to give up.
+const READ_POLL: Duration = Duration::from_millis(200);
 const PAIRING_RETRIES: u32 = 5;
 /// Audio frames waiting beyond this are dropped oldest first (stale audio is worse than a gap).
 const AUDIO_QUEUE_LIMIT: usize = 50;
@@ -528,6 +531,7 @@ fn reader_loop(
     mut decoder: FrameDecoder,
     mut cipher: Option<Cipher>,
     tx: Sender<Event>,
+    stop: Arc<AtomicBool>,
 ) {
     let mut buf = vec![0u8; 256 * 1024];
     loop {
@@ -552,6 +556,11 @@ fn reader_loop(
             }
             Ok(n) => decoder.push(&buf[..n]),
             Err(e) if e.kind() == ErrorKind::Interrupted => {}
+            Err(e) if matches!(e.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut) => {
+                if stop.load(Ordering::Relaxed) {
+                    return;
+                }
+            }
             Err(e) => {
                 let _ = tx.send(Event::Closed(FrameError::Io(e).to_string()));
                 return;
@@ -607,12 +616,14 @@ pub fn run(
     let out = Outbox::new();
     let stream = est.stream;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
+    stream.set_read_timeout(Some(READ_POLL))?;
+    let reader_stop = Arc::new(AtomicBool::new(false));
     let reader = {
-        let (s, tx) = (stream.try_clone()?, tx.clone());
+        let (s, tx, stop) = (stream.try_clone()?, tx.clone(), reader_stop.clone());
         let (decoder, recv) = (est.decoder, est.recv);
         std::thread::Builder::new()
             .name("anydisplay-reader".into())
-            .spawn(move || reader_loop(s, decoder, recv, tx))?
+            .spawn(move || reader_loop(s, decoder, recv, tx, stop))?
     };
     let writer = {
         let (s, out, tx) = (stream.try_clone()?, out.clone(), tx.clone());
@@ -665,6 +676,7 @@ pub fn run(
         None => out.close(false),
     }
     let _ = writer.join();
+    reader_stop.store(true, Ordering::Relaxed);
     let _ = stream.shutdown(Shutdown::Both);
     let _ = reader.join();
 
