@@ -55,6 +55,7 @@ public struct UsbDevice: Hashable, Sendable {
 /// Talks to `adb`: lists attached devices and sets up `adb forward tcp:<local> tcp:47820`.
 public final class Adb {
     public let path: String
+    static let noSerial = "(no serial number)"
 
     /// `ANYDISPLAY_ADB` overrides the search; then PATH, the Android SDK default, and Homebrew.
     public static func locate() -> String? {
@@ -81,22 +82,30 @@ public final class Adb {
 
     /// Parses `adb devices -l`, keeping only devices in the `device` state (authorized and online).
     public static func parseDevices(_ output: String) -> [UsbDevice] {
-        output.split(separator: "\n").compactMap { line in
-            let parts = line.split(whereSeparator: { $0 == " " || $0 == "\t" }).map(String.init)
-            guard parts.count >= 2, parts[1] == "device" else { return nil }
-            let model = parts.dropFirst(2).first { $0.hasPrefix("model:") }.map { String($0.dropFirst(6)) }
-            return UsbDevice(serial: parts[0], model: model)
+        output.split(whereSeparator: \.isNewline).compactMap { line in
+            let missingSerial = line.hasPrefix(noSerial)
+            let fields = (missingSerial ? line.dropFirst(noSerial.count) : line)
+                .split(whereSeparator: \.isWhitespace).map(String.init)
+            let stateIndex = missingSerial ? 0 : 1
+            guard fields.count > stateIndex, fields[stateIndex] == "device" else { return nil }
+            let model = fields.dropFirst(stateIndex + 1).first { $0.hasPrefix("model:") }.map { String($0.dropFirst(6)) }
+            return UsbDevice(serial: missingSerial ? noSerial : fields[0], model: model)
         }
+    }
+
+    static func targeted(serial: String, arguments: [String]) -> [String] {
+        // Explicit USB selection also prevents ANDROID_SERIAL from selecting a different device.
+        (serial == noSerial ? ["-d"] : ["-s", serial]) + arguments
     }
 
     /// Forwards a free local port to the device's 47820 and returns it.
     public func forward(serial: String, remotePort: UInt16 = anyDisplayPort) -> UInt16? {
-        guard let out = run(["-s", serial, "forward", "tcp:0", "tcp:\(remotePort)"]) else { return nil }
+        guard let out = run(Self.targeted(serial: serial, arguments: ["forward", "tcp:0", "tcp:\(remotePort)"])) else { return nil }
         return UInt16(out.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     public func removeForward(serial: String, localPort: UInt16) {
-        _ = run(["-s", serial, "forward", "--remove", "tcp:\(localPort)"])
+        _ = run(Self.targeted(serial: serial, arguments: ["forward", "--remove", "tcp:\(localPort)"]))
     }
 
     private func run(_ args: [String]) -> String? {

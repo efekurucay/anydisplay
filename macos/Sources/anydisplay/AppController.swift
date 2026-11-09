@@ -174,9 +174,9 @@ final class AppController: NSObject, NSMenuDelegate {
 
         menu.addItem(header("USB"))
         if adb == nil {
-            menu.addItem(disabled("adb not found"))
+            menu.addItem(disabled("USB needs Android Platform-Tools (adb)"))
         } else if usbDevices.isEmpty {
-            menu.addItem(disabled("No devices (enable USB debugging)"))
+            menu.addItem(disabled("Unlock device and allow USB debugging"))
         }
         for d in usbDevices {
             let key = "usb:\(d.serial)"
@@ -229,6 +229,9 @@ final class AppController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
+        menu.addItem(action("Setup & Troubleshooting…") {
+            NSWorkspace.shared.open(URL(string: "https://efekurucay.github.io/anydisplay/#setup")!)
+        })
         menu.addItem(action("Quit AnyDisplay") { [weak self] in self?.quit() })
     }
 

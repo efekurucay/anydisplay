@@ -213,7 +213,7 @@ fn main() {
                     let devices = adb.devices()?;
                     match devices.as_slice() {
                         [one] => one.serial.clone(),
-                        [] => bail!("no USB device with debugging authorized"),
+                        [] => bail!("No authorized USB device. Unlock the device, enable USB debugging, accept the computer authorization prompt, and check adb devices -l."),
                         many => bail!(
                             "several devices, pick one: {}",
                             many.iter()

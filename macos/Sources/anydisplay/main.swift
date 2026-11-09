@@ -147,7 +147,7 @@ case "usb":
     } else if devices.count == 1 {
         serial = devices[0].serial
     } else {
-        fail(devices.isEmpty ? "no USB device with debugging authorized" :
+        fail(devices.isEmpty ? "No authorized USB device. Unlock the device, enable USB debugging, accept the computer authorization prompt, and check adb devices -l." :
              "several devices, pick one: \(devices.map(\.serial).joined(separator: " "))")
     }
     guard let port = adb.forward(serial: serial) else { fail("adb forward failed for \(serial)") }

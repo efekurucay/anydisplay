@@ -31,6 +31,8 @@ AnyDisplay is a free, MIT-licensed alternative:
 - **[Open, documented protocol](docs/PROTOCOL.md)** with a Python reference implementation and
   test vectors, so anyone can write a client or a host for another platform.
 
+[**Website & setup guide →**](https://efekurucay.github.io/anydisplay/)
+
 ## Features
 
 | | |
@@ -93,6 +95,10 @@ The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](doc
 
 These links always serve the newest version. Checksums and older versions are on the
 [releases page](https://github.com/efekurucay/anydisplay/releases).
+
+For a guided first connection and common fixes, see the [setup guide](docs/SETUP.md).
+USB requires [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)
+on the computer and a data-capable USB cable.
 
 1. **Android:** open the APK on the device and allow installing from that source. For USB, also
    turn on **USB debugging** in the developer options.
@@ -192,11 +198,24 @@ AnyDisplay is young. What has been tested:
 - **Android client ↔ Mac host:** tested end to end on real hardware (Huawei P30 Pro, MacBook Pro)
   over USB and Wi-Fi: pairing, encryption, video and touch. Audio, cursor and clipboard were each
   verified against the reference implementation.
-- **Windows host:** builds and passes its unit and protocol tests on a Windows CI runner, but has
-  not been tried with a real device yet. Reports are very welcome.
+- **Windows host:** a community report confirms USB connection, handshake and hardware HEVC
+  streaming at 2200×1440 on a TCL NXTPAPER 11 Plus (Android 15). Other Windows features still
+  need device testing. See [PR #3](https://github.com/efekurucay/anydisplay/pull/3).
 - **Pen input:** verified with on-device tests that use synthetic stylus events. It still needs a
   test with a real stylus device.
 - **USB accessory (AOAP) transport:** implemented but untested.
+
+## Tested devices
+
+These are specific test reports, not a guarantee for every feature or device.
+
+| Android device | Host | Verified | Source |
+|---|---|---|---|
+| Huawei P30 Pro | MacBook Pro | USB and Wi-Fi video, pairing and touch; 60 fps at 2340×1080 | Maintainer testing; measurements above |
+| TCL NXTPAPER 11 Plus (9469X), Android 15 | Windows 11 | USB discovery with an empty serial, handshake, hardware HEVC stream at 2200×1440 | [@dionisvl, PR #3](https://github.com/efekurucay/anydisplay/pull/3) |
+
+Tried another device? [Send a device report](https://github.com/efekurucay/anydisplay/issues/new?template=device_report.yml).
+Real stylus pressure/tilt, Windows touch, audio and clipboard need more hardware reports.
 
 ## Roadmap
 

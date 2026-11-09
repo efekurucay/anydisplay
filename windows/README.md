@@ -156,11 +156,17 @@ tests/
   testsrc.rs         ffmpeg pipeline keyframes
 ```
 
-## Not yet verified on Windows hardware
+## Hardware verification and known limits
 
-The Windows layers type-check with the `windows` crate but have not run on a Windows machine:
-capture, the video processor, the encoders (hardware and software), input injection, audio,
-clipboard and the virtual display mode switch. Known limits:
+[@dionisvl reported](https://github.com/efekurucay/anydisplay/pull/3) a successful USB handshake
+and hardware HEVC stream at 2200×1440 on Windows 11 with a TCL NXTPAPER 11 Plus (Android 15).
+Touch/pen injection, audio, clipboard, virtual display mode switching and other GPUs still need
+separate hardware verification. See the [setup guide](../docs/SETUP.md) for connection troubleshooting.
+
+Devices with no USB serial are supported. Keep only one USB Android device attached when using
+one of these; forwarding explicitly selects USB and ignores `ANDROID_SERIAL`.
+
+Known limits:
 
 - **Rotated monitors.** On a rotated monitor the video processor rotates the frame, but the
   cursor is not drawn into it.
