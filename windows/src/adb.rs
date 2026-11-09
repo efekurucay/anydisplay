@@ -3,6 +3,9 @@
 use std::path::PathBuf;
 use std::process::Command;
 
+/// What `adb devices` prints for a device that reports an empty serial. `adb -s` cannot select it.
+const NO_SERIAL: &str = "(no serial number)";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UsbDevice {
     pub serial: String,
@@ -49,26 +52,16 @@ impl Adb {
 
     /// Forwards a free local port to `remote_port` on the device and returns the local port.
     pub fn forward(&self, serial: &str, remote_port: u16) -> std::io::Result<u16> {
-        let out = self.run(&[
-            "-s",
-            serial,
-            "forward",
-            "tcp:0",
-            &format!("tcp:{remote_port}"),
-        ])?;
+        let remote = format!("tcp:{remote_port}");
+        let out = self.run(&targeted(serial, &["forward", "tcp:0", &remote]))?;
         out.trim().parse().map_err(|_| {
             std::io::Error::other(format!("unexpected adb forward output {:?}", out.trim()))
         })
     }
 
     pub fn remove_forward(&self, serial: &str, local_port: u16) {
-        let _ = self.run(&[
-            "-s",
-            serial,
-            "forward",
-            "--remove",
-            &format!("tcp:{local_port}"),
-        ]);
+        let local = format!("tcp:{local_port}");
+        let _ = self.run(&targeted(serial, &["forward", "--remove", &local]));
     }
 
     fn run(&self, args: &[&str]) -> std::io::Result<String> {
@@ -92,21 +85,37 @@ impl Adb {
     }
 }
 
+/// Prepends `-s serial` to `args`, unless the device has no serial to select it by.
+fn targeted<'a>(serial: &'a str, args: &[&'a str]) -> Vec<&'a str> {
+    let mut all = if serial == NO_SERIAL {
+        Vec::new()
+    } else {
+        vec!["-s", serial]
+    };
+    all.extend_from_slice(args);
+    all
+}
+
 /// Parses `adb devices -l`, keeping devices in the `device` state (online and authorized).
 pub fn parse_devices(output: &str) -> Vec<UsbDevice> {
     output
         .lines()
         .filter_map(|line| {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() < 2 || parts[1] != "device" {
+            let after_no_serial = line.strip_prefix(NO_SERIAL);
+            let parts: Vec<&str> = after_no_serial.unwrap_or(line).split_whitespace().collect();
+            let (serial, fields) = match after_no_serial {
+                Some(_) => (NO_SERIAL, &parts[..]),
+                None => (*parts.first()?, &parts[1..]),
+            };
+            if fields.first() != Some(&"device") {
                 return None;
             }
-            let model = parts[2..]
+            let model = fields[1..]
                 .iter()
                 .find_map(|p| p.strip_prefix("model:"))
                 .map(str::to_string);
             Some(UsbDevice {
-                serial: parts[0].to_string(),
+                serial: serial.to_string(),
                 model,
             })
         })
@@ -136,6 +145,32 @@ mod tests {
                     model: None
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn parses_device_without_serial() {
+        let out = "List of devices attached\r\n\
+                   (no serial number)     device product:9469X_RU model:9469X device:Bellona_WF_GL transport_id:1\r\n\
+                   (no serial number)     unauthorized transport_id:2\r\n\r\n";
+        assert_eq!(
+            parse_devices(out),
+            vec![UsbDevice {
+                serial: NO_SERIAL.into(),
+                model: Some("9469X".into())
+            }]
+        );
+    }
+
+    #[test]
+    fn selects_device_only_when_it_has_a_serial() {
+        assert_eq!(
+            targeted("R58N12345", &["forward", "tcp:0"]),
+            ["-s", "R58N12345", "forward", "tcp:0"]
+        );
+        assert_eq!(
+            targeted(NO_SERIAL, &["forward", "tcp:0"]),
+            ["forward", "tcp:0"]
         );
     }
 }
