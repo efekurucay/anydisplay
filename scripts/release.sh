@@ -10,6 +10,8 @@ TAG="${1:?usage: scripts/release.sh vX.Y.Z NOTES.md}"
 NOTES="$(cd "$(dirname "${2:?usage: scripts/release.sh vX.Y.Z NOTES.md}")" && pwd)/$(basename "$2")"
 cd "$(dirname "$0")/.."
 VERSION="${TAG#v}"
+# Resolve the repository before packaging changes the working directory to a temp folder.
+REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
 
 grep -q "versionName = \"$VERSION\"" android/app/build.gradle.kts \
     || { echo "android/app/build.gradle.kts versionName is not $VERSION" >&2; exit 1; }
@@ -25,5 +27,5 @@ shasum -a 256 "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" > SHA256SUMS.txt
 cp "AnyDisplay-$TAG.apk" AnyDisplay.apk
 cp "AnyDisplay-$TAG-macOS.zip" AnyDisplay-macOS.zip
 
-gh release create "$TAG" --title "AnyDisplay $TAG" --notes-file "$NOTES" --latest \
+gh release create "$TAG" --repo "$REPO" --title "AnyDisplay $TAG" --notes-file "$NOTES" --latest \
     "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" SHA256SUMS.txt AnyDisplay.apk AnyDisplay-macOS.zip
