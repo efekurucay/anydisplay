@@ -85,10 +85,11 @@ impl Adb {
     }
 }
 
-/// Prepends `-s serial` to `args`, unless the device has no serial to select it by.
+/// Selects a serial explicitly, or the sole USB device when no serial is available.
 fn targeted<'a>(serial: &'a str, args: &[&'a str]) -> Vec<&'a str> {
     let mut all = if serial == NO_SERIAL {
-        Vec::new()
+        // Select USB explicitly so ANDROID_SERIAL cannot redirect this request.
+        vec!["-d"]
     } else {
         vec!["-s", serial]
     };
@@ -163,14 +164,26 @@ mod tests {
     }
 
     #[test]
-    fn selects_device_only_when_it_has_a_serial() {
+    fn selects_serial_or_usb_transport() {
         assert_eq!(
             targeted("R58N12345", &["forward", "tcp:0"]),
             ["-s", "R58N12345", "forward", "tcp:0"]
         );
         assert_eq!(
             targeted(NO_SERIAL, &["forward", "tcp:0"]),
-            ["forward", "tcp:0"]
+            ["-d", "forward", "tcp:0"]
+        );
+    }
+
+    #[test]
+    fn removal_uses_the_same_usb_selector() {
+        assert_eq!(
+            targeted(NO_SERIAL, &["forward", "--remove", "tcp:12345"]),
+            ["-d", "forward", "--remove", "tcp:12345"]
+        );
+        assert_eq!(
+            targeted("known", &["forward", "--remove", "tcp:12345"]),
+            ["-s", "known", "forward", "--remove", "tcp:12345"]
         );
     }
 }
