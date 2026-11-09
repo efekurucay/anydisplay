@@ -31,7 +31,7 @@ AnyDisplay is a free, MIT-licensed alternative:
 - **[Open, documented protocol](docs/PROTOCOL.md)** with a Python reference implementation and
   test vectors, so anyone can write a client or a host for another platform.
 
-[**Website & setup guide →**](https://efekurucay.github.io/anydisplay/)
+[**Website & setup guide →**](https://efekurucay.com/anydisplay/)
 
 ## Features
 

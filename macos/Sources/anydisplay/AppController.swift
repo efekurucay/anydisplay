@@ -230,7 +230,7 @@ final class AppController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(action("Setup & Troubleshooting…") {
-            NSWorkspace.shared.open(URL(string: "https://efekurucay.github.io/anydisplay/#setup")!)
+            NSWorkspace.shared.open(URL(string: "https://efekurucay.com/anydisplay/#setup")!)
         })
         menu.addItem(action("Quit AnyDisplay") { [weak self] in self?.quit() })
     }
