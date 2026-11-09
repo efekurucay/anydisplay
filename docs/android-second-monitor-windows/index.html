@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Use Android as a Second Monitor on Windows | AnyDisplay</title>
+    <meta
+      name="description"
+      content="Set up an Android second monitor on Windows with AnyDisplay. Learn USB and Wi-Fi commands, mirror vs extend mode, and the optional Virtual Display Driver."
+    />
+    <meta name="theme-color" content="#f5f3ec" />
+    <link
+      rel="canonical"
+      href="https://efekurucay.com/anydisplay/android-second-monitor-windows/"
+    />
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Use Android as a Second Monitor on Windows | AnyDisplay"
+    />
+    <meta
+      property="og:description"
+      content="Set up an Android second monitor on Windows with AnyDisplay. Learn USB and Wi-Fi commands, mirror vs extend mode, and the optional Virtual Display Driver."
+    />
+    <meta
+      property="og:url"
+      content="https://efekurucay.com/anydisplay/android-second-monitor-windows/"
+    />
+    <meta
+      property="og:image"
+      content="https://efekurucay.com/anydisplay/assets/social-preview.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="author" content="Yahya Efe Kuruçay" />
+    <link rel="icon" href="../assets/logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../assets/site.css" />
+    <link rel="stylesheet" href="../assets/guides.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "headline": "An Android second screen for your Windows PC.",
+            "description": "Set up an Android second monitor on Windows with AnyDisplay. Learn USB and Wi-Fi commands, mirror vs extend mode, and the optional Virtual Display Driver.",
+            "url": "https://efekurucay.com/anydisplay/android-second-monitor-windows/",
+            "mainEntityOfPage": "https://efekurucay.com/anydisplay/android-second-monitor-windows/",
+            "datePublished": "2026-11-09",
+            "dateModified": "2026-11-09",
+            "author": {
+              "@type": "Person",
+              "name": "Yahya Efe Kuruçay",
+              "url": "https://efekurucay.com/"
+            },
+            "inLanguage": "en",
+            "image": "https://efekurucay.com/anydisplay/assets/social-preview.png"
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "AnyDisplay",
+                "item": "https://efekurucay.com/anydisplay/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "An Android second screen for your Windows PC.",
+                "item": "https://efekurucay.com/anydisplay/android-second-monitor-windows/"
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="header wrap">
+      <a class="brand" href="../" aria-label="AnyDisplay home"
+        ><span class="brand-mark" aria-hidden="true"><i></i><i></i></span
+        >AnyDisplay<span class="wordmark-dot">.</span></a
+      >
+      <nav aria-label="Main navigation">
+        <a href="../#guides">All guides</a><a href="../#download">Downloads</a
+        ><a class="github-link" href="https://github.com/efekurucay/anydisplay"
+          >GitHub ↗</a
+        >
+      </nav>
+    </header>
+    <main id="main" class="wrap">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="../">AnyDisplay</a><span aria-hidden="true">/</span
+        ><span>Windows Setup</span>
+      </nav>
+      <div class="article-heading">
+        <p class="eyebrow">WINDOWS SETUP</p>
+        <h1>
+          An Android second screen<br />
+          for your Windows PC.
+        </h1>
+        <p class="article-lead">
+          AnyDisplay can stream a Windows monitor to an Android phone or tablet.
+          Mirror first, or add the optional Virtual Display Driver for a
+          separate extended workspace.
+        </p>
+        <p class="article-byline">
+          By <a href="https://efekurucay.com/">Yahya Efe Kuruçay</a> · Updated
+          <time datetime="2026-11-09">9 November 2026</time>
+        </p>
+      </div>
+      <div class="article-layout">
+        <aside class="article-toc">
+          <p class="eyebrow">ON THIS PAGE</p>
+          <nav aria-label="On this page">
+            <a href="#requirements">Requirements</a
+            ><a href="#install">Open the host</a
+            ><a href="#connect">Connect Android</a
+            ><a href="#extend">Mirror or extend</a
+            ><a href="#troubleshoot">Troubleshooting</a
+            ><a href="#report">Report your device</a>
+          </nav>
+        </aside>
+        <article class="article-body">
+          <section id="requirements">
+            <h2>Before you start</h2>
+            <p>
+              The Windows host is <strong>experimental</strong>. It runs on
+              Windows 10 version 1809 or later and Windows 11, on x64 PCs.
+              Android requires version 8.0 or later. Download the APK and
+              Windows ZIP from the <a href="../#download">downloads section</a>.
+            </p>
+            <p>
+              One community report confirms a successful USB connection and
+              2200×1440 hardware HEVC stream with a TCL NXTPAPER 11 Plus on
+              Windows 11. Input injection, audio, clipboard and other GPU
+              combinations still need more device testing. Start with a short
+              connection test before making this part of your daily setup.
+            </p>
+          </section>
+          <section id="install">
+            <h2>1. Open the Android app and Windows terminal</h2>
+            <p>
+              Install the APK on Android and leave AnyDisplay open. Extract the
+              Windows ZIP, then open PowerShell in the folder that contains
+              <code>anydisplay-win.exe</code>.
+            </p>
+            <pre><code>.\anydisplay-win.exe list</code></pre>
+            <p>
+              The list command reports available monitors, USB devices, Wi-Fi
+              clients and stored pairings. The Windows host currently uses the
+              command line; there is no desktop setup wizard.
+            </p>
+          </section>
+          <section id="connect">
+            <h2>2. Connect through USB or Wi-Fi</h2>
+            <h3>USB</h3>
+            <p>
+              Install
+              <a
+                href="https://developer.android.com/tools/releases/platform-tools"
+                >Android Platform-Tools</a
+              >
+              and make sure <code>adb</code> is available in your terminal.
+              Enable Android Developer options and USB debugging, use a data
+              cable, unlock the device and accept the computer authorization
+              prompt.
+            </p>
+            <pre><code>adb devices -l
+.\anydisplay-win.exe usb</code></pre>
+            <p>
+              The adb device state must be <code>device</code>. If several
+              devices are attached, provide the serial shown by adb:
+            </p>
+            <pre><code>.\anydisplay-win.exe usb YOUR_DEVICE_SERIAL</code></pre>
+            <p>
+              Devices with an empty serial are supported starting with v0.1.1.
+              For a device listed as <code>(no serial number)</code>, leave only
+              one USB Android device connected and use the plain
+              <code>usb</code> command.
+            </p>
+            <h3>Wi-Fi</h3>
+            <p>
+              Put the PC and Android device on the same local network. Replace
+              the example IP with the one shown by the Android app:
+            </p>
+            <pre><code>.\anydisplay-win.exe connect 192.168.1.20</code></pre>
+            <p>
+              Compare the pairing code on both screens, confirm in the terminal
+              and accept it on Android. If a connection fails, check firewall
+              rules and wireless client isolation. The app listens on TCP port
+              47820; internet-facing port forwarding is not needed.
+            </p>
+          </section>
+          <section id="extend">
+            <h2>3. Choose mirroring or an extended desktop</h2>
+            <p>
+              <strong>Mirroring</strong> shows an existing monitor on Android.
+              AnyDisplay can do this without a separate display driver.
+            </p>
+            <p>
+              <strong>Extending</strong> gives Windows another monitor to place
+              windows on. For this, install the optional open-source
+              <a href="https://github.com/VirtualDrivers/Virtual-Display-Driver"
+                >Virtual Display Driver</a
+              >. It is a separate project, not bundled with AnyDisplay. Follow
+              the
+              <a
+                href="https://github.com/efekurucay/anydisplay/blob/main/windows/README.md#extra-monitor-virtual-display-driver-setup"
+                >driver setup instructions</a
+              >
+              and configure a mode matching the tablet’s resolution.
+            </p>
+            <p>
+              Arrange the extra monitor in
+              <strong>Settings → System → Display</strong>. Run
+              <code>list</code> again; AnyDisplay marks the recognized driver
+              monitor as <code>[Virtual Display Driver]</code> and selects it by
+              default. If needed, use <code>--monitor N</code> with the monitor
+              number from that list.
+            </p>
+          </section>
+          <section id="troubleshoot">
+            <h2>Common Windows connection problems</h2>
+            <dl>
+              <dt>No authorized USB device</dt>
+              <dd>
+                Unlock Android, accept its USB debugging prompt and retry
+                <code>adb devices -l</code>. A charging-only cable will not
+                work.
+              </dd>
+              <dt>The connection is found but streaming never starts</dt>
+              <dd>
+                Leave AnyDisplay open on Android. Capture the host error with
+                <code>-v</code> and include it in a bug report.
+              </dd>
+              <dt>The tablet mirrors instead of extending</dt>
+              <dd>
+                Check that Virtual Display Driver is installed and recognized.
+                Without it, mirroring is expected.
+              </dd>
+              <dt>Touch does not control an elevated Windows app</dt>
+              <dd>
+                Windows restricts input from a normal process into administrator
+                windows. See the
+                <a
+                  href="https://github.com/efekurucay/anydisplay/blob/main/windows/README.md#running-as-administrator"
+                  >host documentation</a
+                >
+                before changing how you run it.
+              </dd>
+            </dl>
+          </section>
+          <section id="report">
+            <h2>Help expand the tested-device list</h2>
+            <p>
+              The serial-less USB fix came from a real device report and
+              contributor PR. If your setup works, report the Android model and
+              version, Windows version, connection type and which features you
+              tried. If it fails, include the error text, without pairing
+              secrets or unrelated personal information.
+            </p>
+            <p>
+              <a
+                href="https://github.com/efekurucay/anydisplay/issues/new?template=device_report.yml"
+                >Send a device report</a
+              >, or compare
+              <a href="../android-second-monitor-apps/"
+                >other Android second-monitor apps</a
+              >. Mac users can follow the
+              <a href="../android-second-monitor-mac/">macOS guide</a>.
+            </p>
+            <a class="button primary" href="../#download"
+              >Get the Android + Windows apps
+              <span aria-hidden="true">↗</span></a
+            >
+          </section>
+        </article>
+      </div>
+      <section class="related-guides">
+        <p class="eyebrow">KEEP EXPLORING</p>
+        <h2>Find your next step.</h2>
+        <div>
+          <a href="../superdisplay-alternative/"
+            >A Free, Open-Source SuperDisplay Alternative<span
+              aria-hidden="true"
+              >↗</span
+            ></a
+          ><a href="../android-second-monitor-mac/"
+            >Use Android as a Second Monitor for Mac<span aria-hidden="true"
+              >↗</span
+            ></a
+          ><a href="../android-second-monitor-apps/"
+            >Android Second Monitor Apps Compared<span aria-hidden="true"
+              >↗</span
+            ></a
+          >
+        </div>
+      </section>
+    </main>
+    <footer class="wrap">
+      <a class="brand" href="../"
+        >AnyDisplay<span class="wordmark-dot">.</span></a
+      >
+      <p>Made by <a href="https://efekurucay.com">Yahya Efe Kuruçay</a>.</p>
+      <div>
+        <a href="https://github.com/efekurucay/anydisplay">Source ↗</a
+        ><a href="https://github.com/efekurucay/anydisplay/blob/main/LICENSE"
+          >MIT license ↗</a
+        >
+      </div>
+    </footer>
+  </body>
+</html>
