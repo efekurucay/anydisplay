@@ -61,11 +61,23 @@ class InputRouter(
     private fun isPen(tool: Int) = tool == MotionEvent.TOOL_TYPE_STYLUS || tool == MotionEvent.TOOL_TYPE_ERASER
 
     fun onTouchEvent(ev: MotionEvent): Boolean {
-        val tool = ev.getToolType(ev.actionIndex)
+        val changed = ev.actionIndex
         val penIndex = (0 until ev.pointerCount).firstOrNull { isPen(ev.getToolType(it)) }
+        // MOVE and CANCEL apply to every pointer. Transitions belong to the changed pointer,
+        // so a finger landing or lifting never presses or releases the pen.
+        val penOwner = when (ev.actionMasked) {
+            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_CANCEL -> penIndex
+            else -> if (isPen(ev.getToolType(changed))) changed else null
+        }
         when {
-            penIndex != null -> handlePen(ev, if (isPen(tool)) ev.actionIndex else penIndex)
-            tool == MotionEvent.TOOL_TYPE_MOUSE -> handleMouse(ev)
+            penOwner != null -> {
+                handlePen(ev, penOwner)
+                if (ev.actionMasked == MotionEvent.ACTION_CANCEL ||
+                    (ev.actionMasked == MotionEvent.ACTION_MOVE && ev.pointerCount > 1)) {
+                    handleFingers(ev)
+                }
+            }
+            ev.getToolType(changed) == MotionEvent.TOOL_TYPE_MOUSE -> handleMouse(ev)
             else -> handleFingers(ev)
         }
         return true
@@ -199,6 +211,7 @@ class InputRouter(
                 for (h in 0..ev.historySize) {
                     val prev = HashMap(lastPos)
                     for (i in 0 until ev.pointerCount) {
+                        if (isPen(ev.getToolType(i))) continue
                         val id = ev.getPointerId(i)
                         val x = lx(if (h < ev.historySize) ev.getHistoricalX(i, h) else ev.getX(i))
                         val y = ly(if (h < ev.historySize) ev.getHistoricalY(i, h) else ev.getY(i))
