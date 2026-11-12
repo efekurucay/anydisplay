@@ -202,7 +202,7 @@ the connection; `PONG` and all other traffic count as liveness.
 - Such decoders also keep the last frames of a change until more input
   arrives. 100 ms after the last capture, a host should encode the newest
   capture again, up to 8 times at the stream frame rate, so a static screen
-  reaches the display. The macOS host does this.
+  reaches the display. Both hosts do this.
 - `FRAME_ACK` is cumulative: acknowledging frame N acknowledges every earlier
   frame of that stream.
 

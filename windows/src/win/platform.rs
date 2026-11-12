@@ -266,6 +266,8 @@ impl Platform for WinPlatform {
                 encoder,
                 interval: Duration::from_secs(1) / fps.max(1),
                 last: None,
+                last_change: None,
+                idle_repeats_left: 0,
                 _com: None,
             }),
         })
@@ -319,12 +321,19 @@ impl Platform for WinPlatform {
     }
 }
 
+/// Delay after the last change before the idle repeats start (PROTOCOL.md 5.2).
+const IDLE_DELAY: Duration = Duration::from_millis(100);
+/// Some decoders hold frames until more input arrives; this many repeats push a static screen through.
+const IDLE_REPEATS: u32 = 8;
+
 /// Capture → NV12 → encoder, paced to the stream rate. Runs on the session's video thread.
 struct WinPipeline {
     capture: Capture,
     encoder: Encoder,
     interval: Duration,
     last: Option<Instant>,
+    last_change: Option<Instant>,
+    idle_repeats_left: u32,
     /// Joins the MTA on the video thread; declared last so it is released after the COM objects.
     _com: Option<ComGuard>,
 }
@@ -345,10 +354,27 @@ impl VideoPipeline for WinPipeline {
         }
         let timeout = self.interval.as_millis().clamp(1, 100) as u32;
         match self.capture.capture(timeout, force_keyframe)? {
-            Captured::Unchanged => Ok(None),
             Captured::Frame(nv12) => {
-                self.last = Some(Instant::now());
+                let now = Instant::now();
+                self.last = Some(now);
+                self.last_change = Some(now);
+                self.idle_repeats_left = IDLE_REPEATS;
                 self.encoder.encode(&nv12, now_us(), force_keyframe)
+            }
+            Captured::Unchanged => {
+                let idle = self.last_change.is_some_and(|t| t.elapsed() >= IDLE_DELAY);
+                if !idle || self.idle_repeats_left == 0 {
+                    return Ok(None);
+                }
+                // Re-convert the last image; it is encoded as an ordinary (tiny) P-frame.
+                match self.capture.capture(0, true)? {
+                    Captured::Frame(nv12) => {
+                        self.idle_repeats_left -= 1;
+                        self.last = Some(Instant::now());
+                        self.encoder.encode(&nv12, now_us(), false)
+                    }
+                    Captured::Unchanged => Ok(None),
+                }
             }
         }
     }
