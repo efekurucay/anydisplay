@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/anydisplay"
 APP=build/AnyDisplay.app
-VERSION="${ANYDISPLAY_VERSION:-0.1.1}"
+VERSION="${ANYDISPLAY_VERSION:-0.1.2}"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
