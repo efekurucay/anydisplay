@@ -359,9 +359,6 @@ public final class HostSession {
         var codec: Codec = req.codec == Codec.hevc.rawValue ? .hevc : .h264
         if !canDecode(codec) { codec = canDecode(.h264) ? .h264 : .hevc }
 
-        var kbps = Int(req.bitrateKbps)
-        if kbps == 0 { kbps = Self.autoBitrate(width: w, height: h, fps: fps, quality: Int(req.quality), codec: codec) }
-
         // Display: a virtual display unless mirroring was asked for or is the only option.
         var mirror = requested.contains(.mirror)
         var displayID = CGMainDisplayID()
@@ -402,18 +399,23 @@ public final class HostSession {
         latestPending = false
 
         let sid = streamID
+        let bitrateFor = { (c: Codec) in
+            req.bitrateKbps == 0
+                ? Self.autoBitrate(width: w, height: h, fps: fps, quality: Int(req.quality), codec: c)
+                : Int(req.bitrateKbps)
+        }
         let enc: VideoEncoder
+        let kbps: Int
         do {
-            enc = try makeEncoder(codec: codec, width: w, height: h, fps: fps, kbps: kbps, streamID: sid)
-        } catch {
-            if codec == .hevc, canDecode(.h264),
-               let fallback = try? makeEncoder(codec: .h264, width: w, height: h, fps: fps, kbps: kbps, streamID: sid) {
-                codec = .h264
-                enc = fallback
-            } else {
-                close(error: "\(error)", bye: .error)
-                return
+            let selected = try Self.selectEncoder(preferred: codec, supportsH264: canDecode(.h264), bitrateFor: bitrateFor) { c, rate in
+                try self.makeEncoder(codec: c, width: w, height: h, fps: fps, kbps: rate, streamID: sid)
             }
+            enc = selected.encoder
+            codec = selected.codec
+            kbps = selected.bitrateKbps
+        } catch {
+            close(error: "\(error)", bye: .error)
+            return
         }
         encoder = enc
         if !enc.isHardware { notice(.softwareEncoder, "Hardware \(codec == .hevc ? "HEVC" : "H.264") encoder unavailable; using software") }
@@ -536,6 +538,18 @@ public final class HostSession {
         var kbps = Double(width * height) * Double(min(fps, 60)) * bitsPerPixel / 1000
         if codec == .hevc { kbps *= 0.7 }
         return Int(min(max(kbps, 2000), 60000))
+    }
+
+    static func selectEncoder<Encoder>(preferred: Codec, supportsH264: Bool, bitrateFor: (Codec) -> Int,
+                                       create: (Codec, Int) throws -> Encoder) throws -> (encoder: Encoder, codec: Codec, bitrateKbps: Int) {
+        let kbps = bitrateFor(preferred)
+        do {
+            return (try create(preferred, kbps), preferred, kbps)
+        } catch {
+            guard preferred == .hevc && supportsH264 else { throw error }
+            let fallbackKbps = bitrateFor(.h264)
+            return (try create(.h264, fallbackKbps), .h264, fallbackKbps)
+        }
     }
 
     private func makeEncoder(codec: Codec, width: Int, height: Int, fps: Int, kbps: Int, streamID sid: UInt32) throws -> VideoEncoder {

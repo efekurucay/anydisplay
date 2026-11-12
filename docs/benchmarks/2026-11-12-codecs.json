@@ -1,0 +1,1310 @@
+{
+  "date": "2026-11-12",
+  "source_commit": "72d252ff8bf079b072aef15610354d2d0342a092",
+  "mac_cpu": "Apple M5",
+  "mac_os": "27.2",
+  "swift": "6.4.2",
+  "android_app_version": "0.1.2",
+  "reference_frames_per_scene": 180,
+  "reference_format": "1920x1080 60fps NV12 BT.709 video range",
+  "encode_latency_warmup_frames": 30,
+  "android_latency_warmup_frames": 60,
+  "encoder_measurements": [
+    {
+      "actual_kbps": 7365.84,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 4.937292,
+      "encode_p95_ms": 5.2625,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.996189,
+      "psnr": 48.063021,
+      "scene": "desktop",
+      "file": "desktop-h264-10000-quality.h264"
+    },
+    {
+      "actual_kbps": 7365.84,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 5.086958,
+      "encode_p95_ms": 6.03725,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.996189,
+      "psnr": 48.063021,
+      "scene": "desktop",
+      "file": "desktop-h264-10000.h264"
+    },
+    {
+      "actual_kbps": 6534.048,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 5.624333,
+      "encode_p95_ms": 7.460958,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 20000,
+      "width": 1920,
+      "ssim": 0.997509,
+      "psnr": 50.613075,
+      "scene": "desktop",
+      "file": "desktop-h264-20000.h264"
+    },
+    {
+      "actual_kbps": 4991.645333333333,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 4.999625,
+      "encode_p95_ms": 5.50825,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 5000,
+      "width": 1920,
+      "ssim": 0.988569,
+      "psnr": 41.764844,
+      "scene": "desktop",
+      "file": "desktop-h264-5000.h264"
+    },
+    {
+      "actual_kbps": 6432.085333333333,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 4.969042,
+      "encode_p95_ms": 5.490666,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 7000,
+      "width": 1920,
+      "ssim": 0.99402,
+      "psnr": 45.632212,
+      "scene": "desktop",
+      "file": "desktop-h264-7000.h264"
+    },
+    {
+      "actual_kbps": 9762.714666666667,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 5.06075,
+      "encode_p95_ms": 5.506875,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.993114,
+      "psnr": 42.817459,
+      "scene": "motion",
+      "file": "motion-h264-10000-quality.h264"
+    },
+    {
+      "actual_kbps": 9762.714666666667,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 6.396042,
+      "encode_p95_ms": 7.858542,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.993114,
+      "psnr": 42.817459,
+      "scene": "motion",
+      "file": "motion-h264-10000.h264"
+    },
+    {
+      "actual_kbps": 19884.482666666667,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 7.275791,
+      "encode_p95_ms": 8.292666,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 20000,
+      "width": 1920,
+      "ssim": 0.998339,
+      "psnr": 49.937425,
+      "scene": "motion",
+      "file": "motion-h264-20000.h264"
+    },
+    {
+      "actual_kbps": 5005.392,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 5.020958,
+      "encode_p95_ms": 5.558,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 5000,
+      "width": 1920,
+      "ssim": 0.983983,
+      "psnr": 39.071564,
+      "scene": "motion",
+      "file": "motion-h264-5000.h264"
+    },
+    {
+      "actual_kbps": 6918.589333333333,
+      "codec": "h264",
+      "dropped": 0,
+      "encode_median_ms": 5.08575,
+      "encode_p95_ms": 5.504375,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 7000,
+      "width": 1920,
+      "ssim": 0.989001,
+      "psnr": 40.738838,
+      "scene": "motion",
+      "file": "motion-h264-7000.h264"
+    },
+    {
+      "actual_kbps": 6880.634666666667,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 7.71175,
+      "encode_p95_ms": 8.488542,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.996612,
+      "psnr": 48.029838,
+      "scene": "desktop",
+      "file": "desktop-hevc-10000-quality.hevc"
+    },
+    {
+      "actual_kbps": 6880.634666666667,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 5.21825,
+      "encode_p95_ms": 5.439791,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.996612,
+      "psnr": 48.029838,
+      "scene": "desktop",
+      "file": "desktop-hevc-10000.hevc"
+    },
+    {
+      "actual_kbps": 5593.842666666666,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 7.46075,
+      "encode_p95_ms": 8.573083,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 20000,
+      "width": 1920,
+      "ssim": 0.99776,
+      "psnr": 50.489969,
+      "scene": "desktop",
+      "file": "desktop-hevc-20000.hevc"
+    },
+    {
+      "actual_kbps": 4962.032,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 6.692167,
+      "encode_p95_ms": 7.868166,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 5000,
+      "width": 1920,
+      "ssim": 0.99226,
+      "psnr": 43.61587,
+      "scene": "desktop",
+      "file": "desktop-hevc-5000.hevc"
+    },
+    {
+      "actual_kbps": 6852.797333333333,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 5.4285,
+      "encode_p95_ms": 6.113833,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 7000,
+      "width": 1920,
+      "ssim": 0.994876,
+      "psnr": 45.916511,
+      "scene": "desktop",
+      "file": "desktop-hevc-7000.hevc"
+    },
+    {
+      "actual_kbps": 9997.829333333333,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 7.351333,
+      "encode_p95_ms": 8.496,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.992617,
+      "psnr": 42.899669,
+      "scene": "motion",
+      "file": "motion-hevc-10000-quality.hevc"
+    },
+    {
+      "actual_kbps": 9997.829333333333,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 7.175375,
+      "encode_p95_ms": 8.305958,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 10000,
+      "width": 1920,
+      "ssim": 0.992617,
+      "psnr": 42.899669,
+      "scene": "motion",
+      "file": "motion-hevc-10000.hevc"
+    },
+    {
+      "actual_kbps": 19949.442666666666,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 7.314625,
+      "encode_p95_ms": 8.487042,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 20000,
+      "width": 1920,
+      "ssim": 0.998166,
+      "psnr": 49.876443,
+      "scene": "motion",
+      "file": "motion-hevc-20000.hevc"
+    },
+    {
+      "actual_kbps": 4982.669333333333,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 5.844667,
+      "encode_p95_ms": 8.233875,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 5000,
+      "width": 1920,
+      "ssim": 0.983826,
+      "psnr": 39.616827,
+      "scene": "motion",
+      "file": "motion-hevc-5000.hevc"
+    },
+    {
+      "actual_kbps": 6939.442666666667,
+      "codec": "hevc",
+      "dropped": 0,
+      "encode_median_ms": 6.120166,
+      "encode_p95_ms": 7.6225,
+      "fps": 60,
+      "hardware": true,
+      "height": 1080,
+      "input_frames": 180,
+      "output_frames": 180,
+      "target_kbps": 7000,
+      "width": 1920,
+      "ssim": 0.988437,
+      "psnr": 40.858717,
+      "scene": "motion",
+      "file": "motion-hevc-7000.hevc"
+    }
+  ],
+  "android_measurements": [
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "h264",
+      "target_kbps": 10000,
+      "sent": 890,
+      "acked": 890,
+      "elapsed_s": 15.00643175,
+      "sent_fps": 59.307903092952124,
+      "stats": [
+        {
+          "decoded": 34,
+          "dropped": 15,
+          "decode_ms": 12.05,
+          "rtt_ms": 0.0,
+          "bytes": 1222724
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.531,
+          "rtt_ms": 1.424,
+          "bytes": 1016650
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.516,
+          "rtt_ms": 1.946,
+          "bytes": 820630
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.578,
+          "rtt_ms": 1.978,
+          "bytes": 929104
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.707,
+          "rtt_ms": 1.823,
+          "bytes": 1016650
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.42,
+          "rtt_ms": 3.408,
+          "bytes": 820630
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.869,
+          "rtt_ms": 2.57,
+          "bytes": 929104
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.769,
+          "rtt_ms": 1.894,
+          "bytes": 1016650
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.648,
+          "rtt_ms": 1.9,
+          "bytes": 820630
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.854,
+          "rtt_ms": 2.213,
+          "bytes": 929104
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.8,
+          "rtt_ms": 1.835,
+          "bytes": 1016650
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.767,
+          "rtt_ms": 2.103,
+          "bytes": 820630
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.681,
+          "rtt_ms": 2.861,
+          "bytes": 929104
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.626,
+          "rtt_ms": 2.509,
+          "bytes": 1016650
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.625,
+          "rtt_ms": 2.242,
+          "bytes": 820630
+        }
+      ],
+      "decode_median_ms": 4.55,
+      "decode_p95_ms": 5.964,
+      "ack_median_ms": 8.527791000000562,
+      "ack_p95_ms": 11.525250000000042,
+      "scene": "desktop",
+      "round": 1,
+      "stream": "desktop-h264-10000.android-round1.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "h264",
+      "target_kbps": 10000,
+      "sent": 715,
+      "acked": 715,
+      "elapsed_s": 12.012990417,
+      "sent_fps": 59.51890205357849,
+      "stats": [
+        {
+          "decoded": 41,
+          "dropped": 12,
+          "decode_ms": 11.88,
+          "rtt_ms": 0.0,
+          "bytes": 1306563
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.731,
+          "rtt_ms": 2.442,
+          "bytes": 1017421
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.495,
+          "rtt_ms": 2.509,
+          "bytes": 726371
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.747,
+          "rtt_ms": 2.326,
+          "bytes": 1022592
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.317,
+          "rtt_ms": 2.444,
+          "bytes": 1024370
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.366,
+          "rtt_ms": 5.561,
+          "bytes": 727209
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.824,
+          "rtt_ms": 2.936,
+          "bytes": 1029660
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.305,
+          "rtt_ms": 3.524,
+          "bytes": 1009515
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.885,
+          "rtt_ms": 2.637,
+          "bytes": 727209
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.458,
+          "rtt_ms": 3.058,
+          "bytes": 1029660
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.221,
+          "rtt_ms": 27.383,
+          "bytes": 1009515
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.786,
+          "rtt_ms": 3.109,
+          "bytes": 727209
+        }
+      ],
+      "decode_median_ms": 5.033,
+      "decode_p95_ms": 7.163,
+      "ack_median_ms": 9.591042000000272,
+      "ack_p95_ms": 19.27808399999975,
+      "scene": "desktop",
+      "round": 2,
+      "stream": "desktop-h264-10000.android-round2.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "h264",
+      "target_kbps": 10000,
+      "sent": 713,
+      "acked": 713,
+      "elapsed_s": 12.012916458,
+      "sent_fps": 59.352781024725914,
+      "stats": [
+        {
+          "decoded": 31,
+          "dropped": 21,
+          "decode_ms": 16.007,
+          "rtt_ms": 0.0,
+          "bytes": 1283633
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.96,
+          "rtt_ms": 1.962,
+          "bytes": 1004026
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.926,
+          "rtt_ms": 1.715,
+          "bytes": 840298
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.024,
+          "rtt_ms": 4.12,
+          "bytes": 882247
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.103,
+          "rtt_ms": 3.021,
+          "bytes": 1043839
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.004,
+          "rtt_ms": 2.423,
+          "bytes": 840298
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.298,
+          "rtt_ms": 3.651,
+          "bytes": 900664
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 6.009,
+          "rtt_ms": 2.652,
+          "bytes": 1025422
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 5.455,
+          "rtt_ms": 6.231,
+          "bytes": 840298
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.801,
+          "rtt_ms": 1.971,
+          "bytes": 900664
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.696,
+          "rtt_ms": 3.906,
+          "bytes": 1025422
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.164,
+          "rtt_ms": 2.432,
+          "bytes": 840298
+        }
+      ],
+      "decode_median_ms": 4.923,
+      "decode_p95_ms": 6.467,
+      "ack_median_ms": 9.047415999999586,
+      "ack_p95_ms": 13.534249999999304,
+      "scene": "desktop",
+      "round": 3,
+      "stream": "desktop-h264-10000.android-round3.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "h264",
+      "target_kbps": 10000,
+      "sent": 896,
+      "acked": 896,
+      "elapsed_s": 15.009179333,
+      "sent_fps": 59.69680154530538,
+      "stats": [
+        {
+          "decoded": 44,
+          "dropped": 10,
+          "decode_ms": 9.916,
+          "rtt_ms": 0.0,
+          "bytes": 1176489
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.79,
+          "rtt_ms": 2.368,
+          "bytes": 1231013
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.688,
+          "rtt_ms": 1.161,
+          "bytes": 1191767
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.667,
+          "rtt_ms": 1.675,
+          "bytes": 1242432
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.851,
+          "rtt_ms": 3.424,
+          "bytes": 1231013
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.451,
+          "rtt_ms": 1.882,
+          "bytes": 1191767
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.797,
+          "rtt_ms": 1.701,
+          "bytes": 1242432
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.965,
+          "rtt_ms": 3.935,
+          "bytes": 1231013
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.801,
+          "rtt_ms": 1.546,
+          "bytes": 1191767
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.942,
+          "rtt_ms": 3.178,
+          "bytes": 1242432
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.592,
+          "rtt_ms": 3.815,
+          "bytes": 1231013
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.061,
+          "rtt_ms": 2.441,
+          "bytes": 1191767
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.114,
+          "rtt_ms": 2.059,
+          "bytes": 1242432
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.726,
+          "rtt_ms": 1.462,
+          "bytes": 1231013
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.732,
+          "rtt_ms": 1.811,
+          "bytes": 1191767
+        }
+      ],
+      "decode_median_ms": 4.646,
+      "decode_p95_ms": 5.868,
+      "ack_median_ms": 8.183958000000047,
+      "ack_p95_ms": 11.364333999999587,
+      "scene": "motion",
+      "round": 1,
+      "stream": "motion-h264-10000.h264.android.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "hevc",
+      "target_kbps": 10000,
+      "sent": 889,
+      "acked": 889,
+      "elapsed_s": 15.0038065,
+      "sent_fps": 59.251630577880356,
+      "stats": [
+        {
+          "decoded": 37,
+          "dropped": 12,
+          "decode_ms": 11.245,
+          "rtt_ms": 0.0,
+          "bytes": 1226531
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.312,
+          "rtt_ms": 2.398,
+          "bytes": 1031503
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.315,
+          "rtt_ms": 1.32,
+          "bytes": 618883
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.787,
+          "rtt_ms": 3.108,
+          "bytes": 934046
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.189,
+          "rtt_ms": 2.202,
+          "bytes": 1020167
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.069,
+          "rtt_ms": 11.805,
+          "bytes": 630219
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.705,
+          "rtt_ms": 2.403,
+          "bytes": 934046
+        },
+        {
+          "decoded": 58,
+          "dropped": 0,
+          "decode_ms": 4.221,
+          "rtt_ms": 2.065,
+          "bytes": 1009965
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.536,
+          "rtt_ms": 2.007,
+          "bytes": 628385
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.247,
+          "rtt_ms": 3.57,
+          "bytes": 925980
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.126,
+          "rtt_ms": 1.47,
+          "bytes": 1015253
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.255,
+          "rtt_ms": 28.957,
+          "bytes": 643199
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.172,
+          "rtt_ms": 4.922,
+          "bytes": 903983
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 3.932,
+          "rtt_ms": 1.138,
+          "bytes": 1052064
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 3.883,
+          "rtt_ms": 1.573,
+          "bytes": 634525
+        }
+      ],
+      "decode_median_ms": 4.054,
+      "decode_p95_ms": 5.51,
+      "ack_median_ms": 7.430708999999869,
+      "ack_p95_ms": 11.049042000000675,
+      "scene": "desktop",
+      "round": 1,
+      "stream": "desktop-hevc-10000.android-round1.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "hevc",
+      "target_kbps": 10000,
+      "sent": 714,
+      "acked": 714,
+      "elapsed_s": 12.004150583,
+      "sent_fps": 59.479427141737986,
+      "stats": [
+        {
+          "decoded": 37,
+          "dropped": 18,
+          "decode_ms": 10.811,
+          "rtt_ms": 0.0,
+          "bytes": 1294765
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.25,
+          "rtt_ms": 1.846,
+          "bytes": 1040269
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.51,
+          "rtt_ms": 2.866,
+          "bytes": 624323
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.561,
+          "rtt_ms": 2.624,
+          "bytes": 919840
+        },
+        {
+          "decoded": 58,
+          "dropped": 0,
+          "decode_ms": 5.031,
+          "rtt_ms": 2.186,
+          "bytes": 1015253
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.874,
+          "rtt_ms": 11.386,
+          "bytes": 643199
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.615,
+          "rtt_ms": 2.088,
+          "bytes": 884653
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.793,
+          "rtt_ms": 6.468,
+          "bytes": 1056580
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.2,
+          "rtt_ms": 2.434,
+          "bytes": 636659
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.33,
+          "rtt_ms": 1.581,
+          "bytes": 910523
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.71,
+          "rtt_ms": 2.253,
+          "bytes": 1052064
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.652,
+          "rtt_ms": 2.515,
+          "bytes": 621845
+        }
+      ],
+      "decode_median_ms": 4.526,
+      "decode_p95_ms": 6.376,
+      "ack_median_ms": 8.553541999999581,
+      "ack_p95_ms": 13.900125000000152,
+      "scene": "desktop",
+      "round": 2,
+      "stream": "desktop-hevc-10000.android-round2.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "hevc",
+      "target_kbps": 10000,
+      "sent": 714,
+      "acked": 714,
+      "elapsed_s": 12.012877125000001,
+      "sent_fps": 59.436219364476344,
+      "stats": [
+        {
+          "decoded": 34,
+          "dropped": 19,
+          "decode_ms": 13.391,
+          "rtt_ms": 0.0,
+          "bytes": 1253086
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.243,
+          "rtt_ms": 2.216,
+          "bytes": 1066561
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.096,
+          "rtt_ms": 1.562,
+          "bytes": 641152
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.862,
+          "rtt_ms": 2.345,
+          "bytes": 876719
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.821,
+          "rtt_ms": 2.147,
+          "bytes": 1066561
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.703,
+          "rtt_ms": 2.291,
+          "bytes": 641152
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.1,
+          "rtt_ms": 3.826,
+          "bytes": 876719
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.685,
+          "rtt_ms": 1.962,
+          "bytes": 1066561
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 4.734,
+          "rtt_ms": 3.146,
+          "bytes": 641152
+        },
+        {
+          "decoded": 61,
+          "dropped": 0,
+          "decode_ms": 4.52,
+          "rtt_ms": 2.558,
+          "bytes": 876719
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.701,
+          "rtt_ms": 1.826,
+          "bytes": 1066561
+        },
+        {
+          "decoded": 59,
+          "dropped": 0,
+          "decode_ms": 5.095,
+          "rtt_ms": 3.531,
+          "bytes": 641152
+        }
+      ],
+      "decode_median_ms": 4.545,
+      "decode_p95_ms": 5.633,
+      "ack_median_ms": 8.486916999999927,
+      "ack_p95_ms": 11.115333999999422,
+      "scene": "desktop",
+      "round": 3,
+      "stream": "desktop-hevc-10000.android-round3.json"
+    },
+    {
+      "model": "HUAWEI VOG-L09",
+      "os": "Android 10 (API 29)",
+      "codec": "hevc",
+      "target_kbps": 10000,
+      "sent": 893,
+      "acked": 893,
+      "elapsed_s": 15.002056042,
+      "sent_fps": 59.525174249445726,
+      "stats": [
+        {
+          "decoded": 40,
+          "dropped": 12,
+          "decode_ms": 10.535,
+          "rtt_ms": 0.0,
+          "bytes": 1126142
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.557,
+          "rtt_ms": 8.312,
+          "bytes": 1243574
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.752,
+          "rtt_ms": 1.659,
+          "bytes": 1253456
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.622,
+          "rtt_ms": 3.648,
+          "bytes": 1256350
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.575,
+          "rtt_ms": 2.335,
+          "bytes": 1243574
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.68,
+          "rtt_ms": 3.641,
+          "bytes": 1253456
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.408,
+          "rtt_ms": 3.364,
+          "bytes": 1256350
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 4.963,
+          "rtt_ms": 2.878,
+          "bytes": 1262858
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.218,
+          "rtt_ms": 2.662,
+          "bytes": 1253490
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.448,
+          "rtt_ms": 3.573,
+          "bytes": 1256284
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.334,
+          "rtt_ms": 7.727,
+          "bytes": 1243606
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.039,
+          "rtt_ms": 2.237,
+          "bytes": 1253490
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.431,
+          "rtt_ms": 4.804,
+          "bytes": 1256284
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 6.0,
+          "rtt_ms": 2.784,
+          "bytes": 1243606
+        },
+        {
+          "decoded": 60,
+          "dropped": 0,
+          "decode_ms": 5.6,
+          "rtt_ms": 4.415,
+          "bytes": 1253490
+        }
+      ],
+      "decode_median_ms": 4.741,
+      "decode_p95_ms": 7.201,
+      "ack_median_ms": 9.109333000000053,
+      "ack_p95_ms": 14.373917000000347,
+      "scene": "motion",
+      "round": 1,
+      "stream": "motion-hevc-10000.hevc.android.json"
+    }
+  ],
+  "speed_priority_comparison": [
+    {
+      "scene": "desktop",
+      "codec": "h264",
+      "speed_priority_true_sha256": "1f5a037418ac6cde3985a7df0baa6c3dd94ef12761fa5a029457ed9544750537",
+      "speed_priority_false_sha256": "1f5a037418ac6cde3985a7df0baa6c3dd94ef12761fa5a029457ed9544750537"
+    },
+    {
+      "scene": "desktop",
+      "codec": "hevc",
+      "speed_priority_true_sha256": "3e3286e362a6fa56628be9568b29794c3596847a3274b5f30199512beeb6edee",
+      "speed_priority_false_sha256": "3e3286e362a6fa56628be9568b29794c3596847a3274b5f30199512beeb6edee"
+    },
+    {
+      "scene": "motion",
+      "codec": "h264",
+      "speed_priority_true_sha256": "cdbe272ac4ba30fb8dbde3ae0982321df718869958d6c861d7ef83738c4f626f",
+      "speed_priority_false_sha256": "cdbe272ac4ba30fb8dbde3ae0982321df718869958d6c861d7ef83738c4f626f"
+    },
+    {
+      "scene": "motion",
+      "codec": "hevc",
+      "speed_priority_true_sha256": "ad045a20cdf217bf1a3dcec905b983770b35cc8deb6df978e344c83be989a630",
+      "speed_priority_false_sha256": "ad045a20cdf217bf1a3dcec905b983770b35cc8deb6df978e344c83be989a630"
+    }
+  ]
+}
