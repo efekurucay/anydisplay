@@ -195,6 +195,14 @@ the connection; `PONG` and all other traffic count as liveness.
   encoded frames, so the decoder stays consistent).
 - The client acknowledges each frame after `releaseOutputBuffer` (or when it
   drops it). `frame_id` increments by one per frame within a stream.
+- Some decoders hold several frames before their first output, which would
+  stall this flow control. When a frame has stayed inside the decoder for
+  500 ms, the client acknowledges frames as soon as they are queued (with
+  `decode_us` 0) until the stream is reconfigured.
+- Such decoders also keep the last frames of a change until more input
+  arrives. 100 ms after the last capture, a host should encode the newest
+  capture again, up to 8 times at the stream frame rate, so a static screen
+  reaches the display. The macOS host does this.
 - `FRAME_ACK` is cumulative: acknowledging frame N acknowledges every earlier
   frame of that stream.
 

@@ -17,6 +17,9 @@ import java.util.ArrayDeque
 /**
  * Asynchronous MediaCodec decoder tuned for latency: every input is queued as soon as a buffer is free, every output
  * is released for display immediately, and each frame is acknowledged after render or drop.
+ * Some decoders (e.g. Exynos 4 OMX.SEC.AVC.Decoder) hold several frames before their first output. Waiting for those
+ * outputs would stall the host's flow control, so once a frame stays inside the decoder for [STALL_NANOS], frames are
+ * acknowledged when queued instead; the host's idle repeats then push the held frames out (PROTOCOL.md 5.2).
  * All codec calls run on one handler thread.
  */
 class VideoDecoder(private val surface: Surface, private val listener: Listener) : VideoSink {
@@ -41,7 +44,8 @@ class VideoDecoder(private val surface: Surface, private val listener: Listener)
     private var needKeyframe = true
     private var lastKeyframeRequestMs = 0L
     private var released = false
-
+    private var ackOnQueue = false
+    private val stallCheck = Runnable { checkStall() }
 
     @Volatile var decoderName = ""
         private set
@@ -90,8 +94,14 @@ class VideoDecoder(private val surface: Surface, private val listener: Listener)
                 buf.clear()
                 buf.put(f.buffer, f.dataOffset, f.dataLength)
                 val pts = nextPts++
-                inFlight[pts] = InFlight(f.streamId, f.frameId, f.ptsUs, System.nanoTime())
+                if (!ackOnQueue) inFlight[pts] = InFlight(f.streamId, f.frameId, f.ptsUs, System.nanoTime())
                 c.queueInputBuffer(index, 0, f.dataLength, pts, 0)
+                if (ackOnQueue) {
+                    listener.onAck(f.streamId, f.frameId, 0, true, f.ptsUs)
+                } else {
+                    handler.removeCallbacks(stallCheck)
+                    handler.postDelayed(stallCheck, STALL_NANOS / 1_000_000)
+                }
             } catch (e: Exception) {
                 Elog.w("queueInputBuffer failed: ${e.message}")
                 drop(f)
@@ -147,9 +157,19 @@ class VideoDecoder(private val surface: Surface, private val listener: Listener)
         }
     }
 
+    private fun checkStall() {
+        val oldest = inFlight.values.firstOrNull() ?: return
+        if (System.nanoTime() - oldest.queuedNanos < STALL_NANOS) return
+        ackOnQueue = true
+        Elog.i("decoder $decoderName holds ${inFlight.size} frames without output; acknowledging frames when queued")
+        for (e in inFlight.values) listener.onAck(e.streamId, e.frameId, 0, true, e.hostPtsUs)
+        inFlight.clear()
+    }
+
     private fun start(cfg: StreamConfig) {
         stopCodec()
         config = cfg
+        ackOnQueue = false
         val choice = DeviceCaps.decoders()[cfg.codec]
         val mime = DeviceCaps.mimeOf(cfg.codec)
         val attempts = listOf(true to true, false to true, false to false)
@@ -224,6 +244,7 @@ class VideoDecoder(private val surface: Surface, private val listener: Listener)
     private fun stopCodec() {
         val c = codec
         codec = null
+        handler.removeCallbacks(stallCheck)
         if (c != null) {
             try { c.stop() } catch (_: Exception) {}
             try { c.release() } catch (_: Exception) {}
@@ -245,5 +266,10 @@ class VideoDecoder(private val surface: Surface, private val listener: Listener)
         }
         done.await(1, java.util.concurrent.TimeUnit.SECONDS)
         thread.quitSafely()
+    }
+
+    private companion object {
+        /** Far above any working decoder's latency, yet short enough that the first picture appears quickly. */
+        const val STALL_NANOS = 500_000_000L
     }
 }

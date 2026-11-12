@@ -94,6 +94,13 @@ public final class HostSession {
     private var lastEncodePTS = CMTime.zero
     public private(set) var framesSent: UInt64 = 0
 
+    // Idle repeats (PROTOCOL.md 5.2): some decoders hold frames until more input arrives, so once the
+    // screen stops changing the last capture is encoded a few more times to push it through.
+    private static let idleDelay = 0.1
+    private static let idleRepeats = 8
+    private var lastCaptureTime = 0.0
+    private var idleRepeatsLeft = 0
+
     public init(endpoint: NWEndpoint, store: PairingStore, options: SessionOptions = SessionOptions()) {
         self.endpoint = endpoint
         self.store = store
@@ -575,7 +582,27 @@ public final class HostSession {
         guard sid == streamID, phase == .streaming else { return }
         latest = pb
         latestPending = true
+        lastCaptureTime = CACurrentMediaTime()
+        idleRepeatsLeft = Self.idleRepeats
+        scheduleIdleRepeat(after: Self.idleDelay, streamID: sid)
         submitIfPossible()
+    }
+
+    private func scheduleIdleRepeat(after delay: Double, streamID sid: UInt32) {
+        queue.asyncAfter(deadline: .now() + delay) { [weak self] in self?.idleRepeat(streamID: sid) }
+    }
+
+    /// Re-encodes the last capture while the screen is idle. Captures schedule one of these each; only the one
+    /// after the newest capture finds the screen idle, so a single chain of repeats runs at the stream's frame rate.
+    private func idleRepeat(streamID sid: UInt32) {
+        guard sid == streamID, phase == .streaming, latest != nil, idleRepeatsLeft > 0,
+              CACurrentMediaTime() - lastCaptureTime >= Self.idleDelay else { return }
+        idleRepeatsLeft -= 1
+        latestPending = true
+        submitIfPossible()
+        if idleRepeatsLeft > 0 {
+            scheduleIdleRepeat(after: 1 / Double(max(streamInfo?.refreshHz ?? 60, 1)), streamID: sid)
+        }
     }
 
     /// Encodes the newest captured frame unless 3 frames are unacknowledged; skipped captures are
