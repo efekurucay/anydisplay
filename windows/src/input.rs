@@ -51,6 +51,18 @@ pub fn virtual_desk_abs(px: i32, py: i32, vdesk: Rect) -> (i32, i32) {
     (f(px, vdesk.x, vdesk.w), f(py, vdesk.y, vdesk.h))
 }
 
+/// Desktop pixel → synthetic pointer coordinate. `InjectSyntheticPointerInput` takes
+/// `ptPixelLocation` relative to the virtual screen's top-left, so the (possibly negative)
+/// virtual origin is removed. Mouse `MOUSEEVENTF_VIRTUALDESK` injection does not use this.
+pub fn synthetic_pointer(px: i32, py: i32, vdesk: Rect) -> (i32, i32) {
+    (px - vdesk.x, py - vdesk.y)
+}
+
+/// Contact rectangle `(left, top, right, bottom)` around a synthetic touch centre.
+pub fn contact_rect(cx: i32, cy: i32, radius: i32) -> (i32, i32, i32, i32) {
+    (cx - radius, cy - radius, cx + radius, cy + radius)
+}
+
 // ---------------------------------------------------------------- pointer flags (WinUser.h values)
 
 pub mod pointer_flags {
@@ -508,6 +520,120 @@ mod tests {
         assert_eq!(t.map(65535, 65535), (1920 + 2559, -200 + 1599));
         assert_eq!(t.map(32768, 32768), (1920 + 1280, -200 + 800));
         assert_eq!(t.scale(), (2.0, 2.0));
+    }
+
+    fn vdesk_three_displays() -> Rect {
+        Rect {
+            x: -2560,
+            y: 0,
+            w: 2560 + 2560 + 1920,
+            h: 1440,
+        }
+    }
+
+    fn target_at(x: i32, y: i32, w: i32, h: i32) -> InputTarget {
+        InputTarget {
+            monitor: Rect { x, y, w, h },
+            stream_w: w as u32,
+            stream_h: h as u32,
+        }
+    }
+
+    #[test]
+    fn synthetic_pointer_follows_virtual_origin() {
+        let vd = vdesk_three_displays();
+        let primary = target_at(0, 0, 2560, 1440);
+        let left = target_at(-2560, 0, 2560, 1440);
+
+        // Centre of the primary monitor: 2560 px right of the virtual origin.
+        let p = primary.map(32768, 32768);
+        assert_eq!(p, (1280, 720));
+        assert_eq!(synthetic_pointer(p.0, p.1, vd), (3840, 720));
+
+        // Centre of the left monitor.
+        let l = left.map(32768, 32768);
+        assert_eq!(l, (-1280, 720));
+        assert_eq!(synthetic_pointer(l.0, l.1, vd), (1280, 720));
+
+        // Edges: the left monitor's left edge is the virtual origin.
+        let left_edge = left.map(0, 0);
+        assert_eq!(left_edge, (-2560, 0));
+        assert_eq!(synthetic_pointer(left_edge.0, left_edge.1, vd), (0, 0));
+        let primary_right = primary.map(65535, 65535);
+        assert_eq!(primary_right, (2559, 1439));
+        assert_eq!(
+            synthetic_pointer(primary_right.0, primary_right.1, vd),
+            (5119, 1439)
+        );
+    }
+
+    #[test]
+    fn synthetic_pointer_identity_and_negative_y() {
+        let origin = Rect {
+            x: 0,
+            y: 0,
+            w: 2560,
+            h: 1440,
+        };
+        assert_eq!(synthetic_pointer(0, 0, origin), (0, 0));
+        assert_eq!(synthetic_pointer(1234, 567, origin), (1234, 567));
+
+        // A monitor above the primary makes the virtual origin negative in Y too.
+        let above = Rect {
+            x: 0,
+            y: -1080,
+            w: 2560,
+            h: 1440 + 1080,
+        };
+        assert_eq!(synthetic_pointer(0, -1080, above), (0, 0));
+        assert_eq!(synthetic_pointer(120, 0, above), (120, 1080));
+
+        let both = Rect {
+            x: -1920,
+            y: -1080,
+            w: 1920 + 2560,
+            h: 1080 + 1440,
+        };
+        assert_eq!(synthetic_pointer(-1920, -1080, both), (0, 0));
+        assert_eq!(synthetic_pointer(0, 0, both), (1920, 1080));
+    }
+
+    #[test]
+    fn touch_contacts_shift_with_the_same_origin() {
+        let vd = vdesk_three_displays();
+        let left = target_at(-2560, 0, 2560, 1440);
+        let mut slots = TouchSlots::default();
+        let frame = slots.frame(&[c(3, touch_action::DOWN, 0)], &left);
+        let t = frame[0];
+        assert_eq!((t.x, t.y), (-2560, 0));
+        let (x, y) = synthetic_pointer(t.x, t.y, vd);
+        let (l, top, r, bottom) = contact_rect(x, y, t.radius);
+        assert_eq!((x, y), (0, 0));
+        assert_eq!((l, top), (-t.radius, -t.radius));
+        assert_eq!((r, bottom), (t.radius, t.radius));
+        // The untranslated contact would sit a whole monitor left of the virtual origin.
+        assert_eq!(
+            contact_rect(t.x, t.y, t.radius),
+            (-2560 - t.radius, -t.radius, -2560 + t.radius, t.radius)
+        );
+    }
+
+    #[test]
+    fn pen_points_shift_with_the_same_origin() {
+        let vd = vdesk_three_displays();
+        let primary = target_at(0, 0, 2560, 1440);
+        let mut p = PenTracker::default();
+        let out = p.sample(&pen(pen_action::DOWN, 0), &primary);
+        assert_eq!(synthetic_pointer(out[0].x, out[0].y, vd), (2560, 0));
+    }
+
+    #[test]
+    fn mouse_absolute_stays_normalized_not_pixel_shifted() {
+        let vd = vdesk_three_displays();
+        let (ax, _) = virtual_desk_abs(0, 0, vd);
+        // Windows maps the normalized value back with `abs * width / 65536`.
+        assert_eq!(ax as i64 * vd.w as i64 / 65536, (0 - vd.x) as i64);
+        assert_ne!((ax, 0), synthetic_pointer(0, 0, vd));
     }
 
     #[test]

@@ -71,14 +71,18 @@ impl Injector {
         let Some(target) = self.target else { return };
         match event {
             InputEvent::Touch(t) => {
+                // Synthetic pointer coordinates are relative to the virtual screen, which moves
+                // when displays are rearranged: read it per event instead of caching it.
+                let vdesk = monitors::virtual_screen();
                 let frame = self.touch_slots.frame(&t.contacts, &target);
-                self.inject_touch(&frame);
+                self.inject_touch(&frame, vdesk);
             }
             InputEvent::Pen(p) => {
+                let vdesk = monitors::virtual_screen();
                 for s in &p.samples {
                     let points = self.pen_state.sample(s, &target);
                     for pt in points {
-                        self.inject_pen(&pt);
+                        self.inject_pen(&pt, vdesk);
                     }
                 }
             }
@@ -92,16 +96,17 @@ impl Injector {
     pub fn tick(&mut self) {
         if self.touch_slots.active() && self.last_touch.elapsed() >= TOUCH_REFRESH {
             let frame = self.touch_slots.repeat();
-            self.inject_touch(&frame);
+            self.inject_touch(&frame, monitors::virtual_screen());
         }
     }
 
     /// Lifts contacts, the pen, keys and buttons.
     pub fn reset(&mut self) {
+        let vdesk = monitors::virtual_screen();
         let frame = self.touch_slots.cancel_all();
-        self.inject_touch(&frame);
+        self.inject_touch(&frame, vdesk);
         for p in self.pen_state.cancel() {
-            self.inject_pen(&p);
+            self.inject_pen(&p, vdesk);
         }
         for k in self.modifiers.release_all() {
             self.send_key(k);
@@ -121,8 +126,9 @@ impl Injector {
         }
     }
 
-    fn inject_pen(&mut self, p: &PenPoint) {
+    fn inject_pen(&mut self, p: &PenPoint, vdesk: Rect) {
         let Some(dev) = self.pen else { return };
+        let (x, y) = synthetic_pointer(p.x, p.y, vdesk);
         let mut info = POINTER_TYPE_INFO {
             r#type: PT_PEN,
             ..Default::default()
@@ -131,7 +137,7 @@ impl Injector {
             pointerInfo: POINTER_INFO {
                 pointerType: PT_PEN,
                 pointerFlags: POINTER_FLAGS(p.flags),
-                ptPixelLocation: POINT { x: p.x, y: p.y },
+                ptPixelLocation: POINT { x, y },
                 ..Default::default()
             },
             penFlags: p.pen_flags,
@@ -146,7 +152,7 @@ impl Injector {
         }
     }
 
-    fn inject_touch(&mut self, frame: &[TouchPoint]) {
+    fn inject_touch(&mut self, frame: &[TouchPoint], vdesk: Rect) {
         let Some(dev) = self.touch else { return };
         if frame.is_empty() {
             return;
@@ -158,18 +164,20 @@ impl Injector {
                     r#type: PT_TOUCH,
                     ..Default::default()
                 };
+                let (x, y) = synthetic_pointer(t.x, t.y, vdesk);
+                let (left, top, right, bottom) = contact_rect(x, y, t.radius);
                 let rc = RECT {
-                    left: t.x - t.radius,
-                    top: t.y - t.radius,
-                    right: t.x + t.radius,
-                    bottom: t.y + t.radius,
+                    left,
+                    top,
+                    right,
+                    bottom,
                 };
                 info.Anonymous.touchInfo = POINTER_TOUCH_INFO {
                     pointerInfo: POINTER_INFO {
                         pointerType: PT_TOUCH,
                         pointerId: t.slot,
                         pointerFlags: POINTER_FLAGS(t.flags),
-                        ptPixelLocation: POINT { x: t.x, y: t.y },
+                        ptPixelLocation: POINT { x, y },
                         ..Default::default()
                     },
                     touchFlags: 0,
