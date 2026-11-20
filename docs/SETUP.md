@@ -38,10 +38,15 @@ It mirrors an existing monitor unless you install the optional
    on the computer. On macOS with Homebrew, `brew install --cask android-platform-tools` is another
    option. Restart AnyDisplay after installing it. For a custom location, set `ANYDISPLAY_ADB`
    to the full executable path when launching the host from a terminal.
-2. Enable **Developer options → USB debugging** on Android. Use a data-capable cable, unlock
+2. If **Developer options** is hidden, find **Build number** in your phone's settings and tap it
+   seven times. The [Android Developer options guide](https://developer.android.com/studio/debug/dev-options#enable)
+   lists common locations. On Xiaomi and Redmi devices, look for **OS/MIUI version** under
+   **About phone**, then find **Developer options** in **Additional settings**.
+   See [Xiaomi's instructions](https://www.mi.com/uk/support/faq/details/KA-168765/).
+3. Open **Developer options** and turn on **USB debugging**. Use a data-capable cable, unlock
    the device, and accept the **Allow USB debugging?** prompt for this computer.
-3. Run `adb devices -l`. Your device must say `device`, not `unauthorized` or `offline`.
-4. Keep AnyDisplay open on Android. The Mac menu bar app connects authorized USB devices
+4. Run `adb devices -l`. Your device must say `device`, not `unauthorized` or `offline`.
+5. Keep AnyDisplay open on Android. The Mac menu bar app connects authorized USB devices
    automatically by default; on Windows run the USB command above.
 
 For a device listed as `(no serial number)`, connect only one USB Android device at a time.
