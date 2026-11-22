@@ -2,9 +2,11 @@ package dev.anydisplay.client.protocol
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.EOFException
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -38,6 +40,23 @@ class FramingTest {
         val b = r.receive()
         assertEquals(Proto.CH_INPUT, b.channel)
         assertArrayEquals(byteArrayOf(1, 4, 0, 2, 0), b.body)
+        assertEquals(null, r.pendingBody)
+    }
+
+    @Test
+    fun retainsReadProgressForAnIncompleteVideoMessage() {
+        val w = MemTransport()
+        FrameChannel(w).send(Proto.CH_VIDEO, Proto.VIDEO_FRAME, ByteArray(156_196))
+        val r = FrameChannel(MemTransport(w.out.toByteArray().copyOf(6 + 4096)))
+
+        assertThrows(EOFException::class.java) { r.receive() }
+
+        val pending = checkNotNull(r.pendingBody)
+        assertEquals(Proto.CH_VIDEO, pending.channel)
+        assertEquals(Proto.VIDEO_FRAME, pending.type)
+        assertEquals(4096, pending.received)
+        assertEquals(156_196, pending.expected)
+        assertEquals(0L, r.bytesReceived.get())
     }
 
     @Test(expected = ProtocolException::class)

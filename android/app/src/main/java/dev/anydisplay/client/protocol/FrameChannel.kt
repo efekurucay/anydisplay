@@ -22,6 +22,10 @@ interface Transport : Closeable {
  * Encryption is applied inside the write lock so the sequence numbers follow the wire order.
  */
 class FrameChannel(private val transport: Transport) : Closeable {
+    internal class BodyReadProgress(val channel: Int, val type: Int, val expected: Int) {
+        @Volatile var received = 0
+    }
+
     private val input = BufferedInputStream(transport.input, 256 * 1024)
     private val output = BufferedOutputStream(transport.output, 64 * 1024)
     private val writeLock = Any()
@@ -31,6 +35,8 @@ class FrameChannel(private val transport: Transport) : Closeable {
     @Volatile private var sendCipher: FrameCipher? = null
     @Volatile private var recvCipher: FrameCipher? = null
     @Volatile var closed = false
+        private set
+    @Volatile internal var pendingBody: BodyReadProgress? = null
         private set
 
     val bytesReceived = AtomicLong()
@@ -64,18 +70,24 @@ class FrameChannel(private val transport: Transport) : Closeable {
         val channel = header[4].toInt() and 0xFF
         val type = header[5].toInt() and 0xFF
         val body = ByteArray((length - 2).toInt())
-        readFully(body, body.size)
+        if (body.isNotEmpty()) {
+            val progress = BodyReadProgress(channel, type, body.size)
+            pendingBody = progress
+            readFully(body, body.size, progress)
+            pendingBody = null
+        }
         bytesReceived.addAndGet(length + 4)
         val plain = recvCipher?.decrypt(channel, type, body) ?: body
         return Frame(channel, type, plain)
     }
 
-    private fun readFully(buf: ByteArray, n: Int) {
+    private fun readFully(buf: ByteArray, n: Int, progress: BodyReadProgress? = null) {
         var off = 0
         while (off < n) {
             val r = input.read(buf, off, n - off)
             if (r < 0) throw EOFException("connection closed")
             off += r
+            progress?.received = off
         }
     }
 

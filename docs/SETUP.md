@@ -75,10 +75,32 @@ The Android app listens on TCP port **47820**. No router port forwarding is need
 | `offline` | Reconnect the device and check its debugging prompt before retrying. |
 | More than one device | Select a serial with `usb SERIAL`; for an empty serial, unplug other USB devices. |
 | Device found but connection fails | Open AnyDisplay on Android; verify the app is listening before retrying. |
+| Windows USB connects, shows a black screen, then times out | Compare with Wi-Fi and collect the USB diagnostics below. |
 | Video is blank on Mac | Enable Screen Recording, restart the host, and check the display arrangement. |
 | Picture works, touch does not on Mac | Enable Accessibility for the current AnyDisplay app and restart it. |
 | Permissions stopped working after an update | The Mac app is ad-hoc signed; re-enable its permissions for the new build. |
 | Windows mirrors instead of extending | Install the optional Virtual Display Driver; see the Windows guide. |
+
+### Windows USB connects and then times out
+
+Try Wi-Fi on the same PC and Android device. If it shows video, use it while diagnosing USB.
+Record `adb version` and the `usb_backend` field from `adb server-status`, then retry USB
+with `anydisplay-win.exe usb -v` and collect `adb logcat -s AnyDisplay`.
+
+If `adb server-status` shows `LIBADBUSB`, compare with the alternate Windows USB backend
+documented in the [Platform-Tools release notes](https://developer.android.com/tools/releases/platform-tools#37.0.1_(july_2026)).
+Run this in PowerShell after ending any active ADB sessions.
+
+```powershell
+adb kill-server
+$env:ADB_USB_LEGACY = '1'
+adb start-server
+adb server-status
+.\anydisplay-win.exe usb -v
+```
+
+To restore the default backend, stop AnyDisplay, run `adb kill-server`, remove the override with
+`Remove-Item Env:ADB_USB_LEGACY`, and run `adb start-server` again.
 
 Still stuck? [Report the issue](https://github.com/efekurucay/anydisplay/issues/new?template=bug_report.yml)
 with your host OS, Android model/version, connection type and error text. Never include pairing

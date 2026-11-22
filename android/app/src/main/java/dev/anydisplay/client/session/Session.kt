@@ -112,7 +112,10 @@ class Session(
     @Volatile var lastClipboardFromHost: String? = null
 
     private val watchdog = Watchdog("session") { why ->
-        Elog.w("watchdog: $why")
+        val read = channel.pendingBody
+        val detail = if (read == null) "" else
+            ", channel=${read.channel} type=0x${read.type.toString(16)} body=${read.received}/${read.expected} bytes"
+        Elog.w("watchdog: $why$detail")
         endReason = "timed out $why"
         channel.close()
     }

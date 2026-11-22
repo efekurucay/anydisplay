@@ -21,7 +21,7 @@ use anyhow::{anyhow, bail, Context};
 use std::collections::VecDeque;
 use std::io::{ErrorKind, Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
@@ -230,7 +230,6 @@ impl VideoStream {
         pipeline: Box<dyn VideoPipeline>,
         out: Arc<Outbox>,
         events: Sender<Event>,
-        sent: Arc<AtomicU64>,
     ) -> VideoStream {
         let flow = Arc::new(Flow {
             state: Mutex::new(FlowState {
@@ -242,7 +241,7 @@ impl VideoStream {
         let f = flow.clone();
         let thread = std::thread::Builder::new()
             .name(format!("anydisplay-video-{stream_id}"))
-            .spawn(move || video_loop(stream_id, pipeline, f, out, events, sent))
+            .spawn(move || video_loop(stream_id, pipeline, f, out, events))
             .expect("spawn video thread");
         VideoStream {
             stream_id,
@@ -285,7 +284,6 @@ fn video_loop(
     flow: Arc<Flow>,
     out: Arc<Outbox>,
     events: Sender<Event>,
-    sent: Arc<AtomicU64>,
 ) {
     loop {
         let force = {
@@ -346,7 +344,6 @@ fn video_loop(
             }
             .frame(),
         );
-        sent.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -570,19 +567,32 @@ fn reader_loop(
 }
 
 fn writer_loop(
-    mut stream: TcpStream,
+    mut stream: impl Write,
     mut cipher: Option<Cipher>,
     out: Arc<Outbox>,
     tx: Sender<Event>,
-) {
+) -> u64 {
+    let mut video_written = 0;
     while let Some(f) = out.next() {
-        if let Err(e) = stream.write_all(&encode_frame(&f, cipher.as_mut())) {
+        let bytes = encode_frame(&f, cipher.as_mut());
+        if let Err(e) = stream.write_all(&bytes) {
+            let error = format!(
+                "send failed: channel={} type=0x{:02x} ({} wire bytes): {e}",
+                f.channel,
+                f.ty,
+                bytes.len()
+            );
+            debug!("{error}");
             out.close(false);
-            let _ = tx.send(Event::Closed(format!("send failed: {e}")));
-            return;
+            let _ = tx.send(Event::Closed(error));
+            return video_written;
+        }
+        if f.channel == channel::VIDEO && f.ty == ty::VIDEO_FRAME {
+            video_written += 1;
         }
     }
     let _ = stream.flush();
+    video_written
 }
 
 // ---------------------------------------------------------------- the session
@@ -650,7 +660,6 @@ pub fn run(
         stream_id: 0,
         video: None,
         audio: None,
-        sent: Arc::new(AtomicU64::new(0)),
         end_at: None,
         next_clipboard: now,
         summary: SessionSummary {
@@ -675,20 +684,20 @@ pub fn run(
         }
         None => out.close(false),
     }
-    let _ = writer.join();
+    let video_written = writer.join().unwrap_or_default();
     reader_stop.store(true, Ordering::Relaxed);
     let _ = stream.shutdown(Shutdown::Both);
     let _ = reader.join();
 
     let mut summary = live.summary;
-    summary.frames_sent = live.sent.load(Ordering::Relaxed);
+    summary.frames_sent = video_written;
     summary.error = end.error;
     match &summary.error {
         Some(e) => warn!("session closed: {e}"),
         None => info!("session closed"),
     }
     info!(
-        "sent {} video frames in {} stream(s)",
+        "wrote {} video frames to the socket in {} stream(s)",
         summary.frames_sent, summary.streams
     );
     Ok(summary)
@@ -730,7 +739,6 @@ struct Live<'a> {
     stream_id: u32,
     video: Option<VideoStream>,
     audio: Option<AudioStream>,
-    sent: Arc<AtomicU64>,
     end_at: Option<Instant>,
     next_clipboard: Instant,
     summary: SessionSummary,
@@ -1038,7 +1046,6 @@ impl Live<'_> {
             opened.pipeline,
             self.out.clone(),
             self.tx.clone(),
-            self.sent.clone(),
         ));
         self.summary.streams += 1;
         self.summary.last_config = Some(config);
@@ -1053,6 +1060,28 @@ impl Live<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn writer_counts_only_complete_video_writes() {
+        let out = Outbox::new();
+        out.send(Frame {
+            channel: channel::CONTROL,
+            ty: ty::BYE,
+            body: vec![0],
+        });
+        for _ in 0..2 {
+            out.send(Frame {
+                channel: channel::VIDEO,
+                ty: ty::VIDEO_FRAME,
+                body: vec![0],
+            });
+        }
+        out.close(true);
+        let (tx, rx) = mpsc::channel();
+        // Two seven-byte messages fit, with three bytes left for the last one.
+        assert_eq!(writer_loop(&mut [0u8; 17][..], None, out, tx), 1);
+        assert!(matches!(rx.try_recv(), Ok(Event::Closed(_))));
+    }
 
     #[test]
     fn outbox_priority_and_drain() {
