@@ -24,7 +24,7 @@ mod app {
     use anydisplay::session::{self, SessionConfig, SessionHandle, SessionState, StreamInfo};
     use anydisplay::win::monitors;
     use anydisplay::{info, warn};
-    use eframe::egui;
+    use eframe::egui::{self, Color32, CornerRadius, Margin, RichText, Stroke};
     use std::collections::{BTreeMap, HashMap};
     use std::net::SocketAddr;
     use std::path::PathBuf;
@@ -38,6 +38,85 @@ mod app {
     };
 
     const SETUP_URL: &str = "https://efekurucay.com/anydisplay/#setup";
+    const VDD_URL: &str = "https://github.com/VirtualDrivers/Virtual-Display-Driver/releases";
+
+    /// Design tokens aligned with the AnyDisplay website (warm cream / organic ink / burnt orange
+    /// / soft lime in light mode, plus a matching dark variant).
+    #[derive(Clone, Copy)]
+    struct Palette {
+        dark: bool,
+        canvas: Color32,
+        header_bg: Color32,
+        card_bg: Color32,
+        card_highlight: Color32,
+        card_highlight_border: Color32,
+        input_bg: Color32,
+        hairline: Color32,
+        ink: Color32,
+        body: Color32,
+        muted: Color32,
+        primary: Color32,
+        on_primary: Color32,
+        accent: Color32,
+        accent_hover: Color32,
+        forest: Color32,
+        sage: Color32,
+        error_bg: Color32,
+        error_border: Color32,
+        error_text: Color32,
+    }
+
+    impl Palette {
+        fn light() -> Self {
+            Self {
+                dark: false,
+                canvas: Color32::from_rgb(0xF5, 0xF3, 0xEC),
+                header_bg: Color32::from_rgb(0xEB, 0xEC, 0xE2),
+                card_bg: Color32::from_rgb(0xEB, 0xEC, 0xE2),
+                card_highlight: Color32::from_rgb(0xD9, 0xED, 0x9D),
+                card_highlight_border: Color32::from_rgb(0xCA, 0xD6, 0xB6),
+                input_bg: Color32::from_rgb(0xF5, 0xF3, 0xEC),
+                hairline: Color32::from_rgb(0xD7, 0xD8, 0xCB),
+                ink: Color32::from_rgb(0x24, 0x28, 0x20),
+                body: Color32::from_rgb(0x55, 0x5F, 0x4C),
+                muted: Color32::from_rgb(0x5D, 0x66, 0x56),
+                primary: Color32::from_rgb(0x24, 0x28, 0x20),
+                on_primary: Color32::WHITE,
+                accent: Color32::from_rgb(0xC7, 0x4B, 0x29),
+                accent_hover: Color32::from_rgb(0xAC, 0x3F, 0x22),
+                forest: Color32::from_rgb(0x25, 0x3E, 0x34),
+                sage: Color32::from_rgb(0x69, 0x7A, 0x67),
+                error_bg: Color32::from_rgb(0xF8, 0xE6, 0xE0),
+                error_border: Color32::from_rgb(0xC7, 0x4B, 0x29),
+                error_text: Color32::from_rgb(0x8C, 0x2D, 0x14),
+            }
+        }
+
+        fn dark() -> Self {
+            Self {
+                dark: true,
+                canvas: Color32::from_rgb(0x0F, 0x0F, 0x0F),
+                header_bg: Color32::from_rgb(0x16, 0x16, 0x16),
+                card_bg: Color32::from_rgb(0x1D, 0x1D, 0x1D),
+                card_highlight: Color32::from_rgb(0x25, 0x3E, 0x34),
+                card_highlight_border: Color32::from_rgb(0x40, 0x63, 0x54),
+                input_bg: Color32::from_rgb(0x14, 0x14, 0x14),
+                hairline: Color32::from_rgb(0x35, 0x35, 0x35),
+                ink: Color32::from_rgb(0xF6, 0xF6, 0xF6),
+                body: Color32::from_rgb(0xC5, 0xC9, 0xBF),
+                muted: Color32::from_rgb(0x9E, 0x9E, 0x9E),
+                primary: Color32::from_rgb(0xF6, 0xF6, 0xF6),
+                on_primary: Color32::from_rgb(0x0B, 0x0B, 0x0C),
+                accent: Color32::from_rgb(0xC7, 0x4B, 0x29),
+                accent_hover: Color32::from_rgb(0xAC, 0x3F, 0x22),
+                forest: Color32::from_rgb(0xD9, 0xED, 0x9D),
+                sage: Color32::from_rgb(0x76, 0x83, 0x69),
+                error_bg: Color32::from_rgb(0x33, 0x1B, 0x15),
+                error_border: Color32::from_rgb(0xC7, 0x4B, 0x29),
+                error_text: Color32::from_rgb(0xF5, 0xB8, 0xA8),
+            }
+        }
+    }
 
     #[derive(Clone)]
     struct MonitorItem {
@@ -105,6 +184,9 @@ mod app {
         tx: Sender<UiEvent>,
         rx: Receiver<UiEvent>,
 
+        // Theme
+        dark_mode: bool,
+
         // System tray
         tray: Option<TrayIcon>,
         tray_streaming: bool,
@@ -116,7 +198,6 @@ mod app {
         usb_snapshot: Arc<Mutex<UsbSnapshot>>,
         usb_stop: Arc<AtomicBool>,
         monitors: Vec<MonitorItem>,
-        is_admin: bool,
 
         // Sessions & pairing
         sessions: BTreeMap<String, ActiveSession>,
@@ -136,7 +217,6 @@ mod app {
         // UI inputs & state
         manual_address: String,
         show_logs: bool,
-        show_paired: bool,
         window_visible: bool,
         quitting: bool,
         last_auto_connect_check: Instant,
@@ -154,8 +234,8 @@ mod app {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_title("AnyDisplay")
-                .with_inner_size([430.0, 640.0])
-                .with_min_inner_size([380.0, 480.0])
+                .with_inner_size([440.0, 740.0])
+                .with_min_inner_size([390.0, 540.0])
                 .with_icon(viewport_icon),
             ..Default::default()
         };
@@ -168,7 +248,20 @@ mod app {
 
     impl AnyDisplayApp {
         fn new(cc: &eframe::CreationContext<'_>) -> Self {
-            configure_theme(&cc.egui_ctx);
+            install_fonts(&cc.egui_ctx);
+            let dark_mode = match cc.egui_ctx.system_theme() {
+                Some(egui::Theme::Dark) => true,
+                Some(egui::Theme::Light) => false,
+                None => cc.egui_ctx.style().visuals.dark_mode,
+            };
+            apply_theme(
+                &cc.egui_ctx,
+                if dark_mode {
+                    Palette::dark()
+                } else {
+                    Palette::light()
+                },
+            );
             let (tx, rx) = mpsc::channel();
 
             // Start Wi-Fi mDNS monitor
@@ -198,14 +291,14 @@ mod app {
 
             let monitors = query_monitors();
             let paired_devices = load_paired_devices();
-            let is_admin = is_elevated();
 
-            info!("AnyDisplay GUI started (admin={is_admin})");
+            info!("AnyDisplay GUI started");
 
             Self {
                 ctx: cc.egui_ctx.clone(),
                 tx,
                 rx,
+                dark_mode,
                 tray,
                 tray_streaming: false,
                 hwnd,
@@ -214,7 +307,6 @@ mod app {
                 usb_snapshot,
                 usb_stop,
                 monitors,
-                is_admin,
                 sessions: BTreeMap::new(),
                 usb_retry_after: HashMap::new(),
                 pairing_prompt: None,
@@ -228,11 +320,18 @@ mod app {
                 verbose_logs: false,
                 manual_address: String::new(),
                 show_logs: false,
-                show_paired: false,
                 window_visible: true,
                 quitting: false,
                 last_auto_connect_check: Instant::now() - Duration::from_secs(5),
                 last_monitor_refresh: Instant::now(),
+            }
+        }
+
+        fn palette(&self) -> Palette {
+            if self.dark_mode {
+                Palette::dark()
+            } else {
+                Palette::light()
             }
         }
 
@@ -537,7 +636,6 @@ mod app {
                 return;
             }
 
-            // Periodic repaint and monitor refresh while visible.
             if self.window_visible {
                 if self.last_monitor_refresh.elapsed() >= Duration::from_secs(3) {
                     self.monitors = query_monitors();
@@ -546,45 +644,55 @@ mod app {
                 ctx.request_repaint_after(Duration::from_millis(500));
             }
 
+            let p = self.palette();
+
             // Pairing confirmation modal
-            self.render_pairing_modal(ctx);
+            self.render_pairing_modal(ctx, p);
 
             // Top bar
             egui::TopBottomPanel::top("header")
                 .frame(
                     egui::Frame::NONE
-                        .fill(egui::Color32::from_rgb(20, 22, 27))
-                        .inner_margin(egui::Margin::symmetric(14, 10)),
+                        .fill(p.header_bg)
+                        .stroke(Stroke::new(1.0, p.hairline))
+                        .inner_margin(Margin::symmetric(16, 12)),
                 )
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new("AnyDisplay")
-                                .strong()
-                                .size(17.0)
-                                .color(egui::Color32::WHITE),
+                            RichText::new("AnyDisplay")
+                                .family(display_font())
+                                .size(19.5)
+                                .color(p.ink),
                         );
+                        ui.add_space(4.0);
 
-                        let (pill_text, pill_color) = if self.is_streaming() {
-                            ("Streaming", egui::Color32::from_rgb(34, 197, 94))
+                        if self.is_streaming() {
+                            pill_filled(
+                                ui,
+                                "STREAMING",
+                                p.card_highlight,
+                                p.ink,
+                                p.card_highlight_border,
+                            );
                         } else if !self.sessions.is_empty() {
-                            ("Connecting", egui::Color32::from_rgb(234, 179, 8))
+                            pill_filled(ui, "CONNECTING", p.accent, Color32::WHITE, p.accent);
                         } else {
-                            ("Idle", egui::Color32::from_rgb(100, 116, 139))
-                        };
-                        status_badge(ui, pill_text, pill_color);
+                            pill_outline(ui, "IDLE", p);
+                        }
 
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if self.has_vdd() {
-                                status_badge(ui, "VDD Ready", egui::Color32::from_rgb(56, 189, 248))
-                                    .on_hover_text("Virtual Display Driver detected — extended display enabled.");
+                            let tip = if self.dark_mode {
+                                "Switch to Light theme"
                             } else {
-                                status_badge(ui, "Mirror Mode", egui::Color32::from_rgb(148, 163, 184))
-                                    .on_hover_text("Virtual Display Driver not detected. Install VDD for an extended display.");
-                            }
-                            if !self.is_admin {
-                                status_badge(ui, "Standard", egui::Color32::from_rgb(120, 113, 108))
-                                    .on_hover_text("Not running as Administrator. Touch/pen input cannot control elevated (UAC) windows.");
+                                "Switch to Dark theme"
+                            };
+                            if theme_icon_button(ui, self.dark_mode, p)
+                                .on_hover_text(tip)
+                                .clicked()
+                            {
+                                self.dark_mode = !self.dark_mode;
+                                apply_theme(ctx, self.palette());
                             }
                         });
                     });
@@ -594,20 +702,33 @@ mod app {
             egui::TopBottomPanel::bottom("footer")
                 .frame(
                     egui::Frame::NONE
-                        .fill(egui::Color32::from_rgb(20, 22, 27))
-                        .inner_margin(egui::Margin::symmetric(14, 8)),
+                        .fill(p.header_bg)
+                        .stroke(Stroke::new(1.0, p.hairline))
+                        .inner_margin(Margin::symmetric(16, 10)),
                 )
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
-                        if ui.link("Setup & Troubleshooting").clicked() {
+                        let link = ui.add(
+                            egui::Label::new(
+                                RichText::new("Setup & Troubleshooting ↗")
+                                    .size(12.5)
+                                    .strong()
+                                    .color(p.body),
+                            )
+                            .sense(egui::Sense::click()),
+                        );
+                        if link.hovered() {
+                            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                        }
+                        if link.clicked() {
                             open_url(SETUP_URL);
                         }
+
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Quit").clicked() {
+                            if primary_button_sm(ui, "Quit", p).clicked() {
                                 self.begin_quit();
                             }
-                            if ui
-                                .button("Hide to Tray")
+                            if outline_button_sm(ui, "Hide to Tray", p)
                                 .on_hover_text("Keep AnyDisplay running in the system tray")
                                 .clicked()
                             {
@@ -621,49 +742,45 @@ mod app {
             egui::CentralPanel::default()
                 .frame(
                     egui::Frame::NONE
-                        .fill(egui::Color32::from_rgb(26, 29, 36))
-                        .inner_margin(egui::Margin::symmetric(14, 10)),
+                        .fill(p.canvas)
+                        .inner_margin(Margin::symmetric(16, 14)),
                 )
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         if let Some(err) = self.last_error.clone() {
-                            error_banner(ui, &err, || {
+                            error_banner(ui, &err, p, || {
                                 self.last_error = None;
                             });
-                            ui.add_space(8.0);
+                            ui.add_space(12.0);
                         }
 
-                        // 1. Connected sessions
+                        // 1. Connected sessions (signature lime highlight card)
                         if !self.sessions.is_empty() {
-                            self.render_connected_section(ui);
+                            self.render_connected_section(ui, p);
                             ui.add_space(10.0);
                         }
 
                         // 2. USB devices
-                        self.render_usb_section(ui);
+                        self.render_usb_section(ui, p);
                         ui.add_space(10.0);
 
                         // 3. Wi-Fi devices + manual IP
-                        self.render_wifi_section(ui);
+                        self.render_wifi_section(ui, p);
                         ui.add_space(10.0);
 
                         // 4. Display & Stream settings
-                        self.render_settings_section(ui);
+                        self.render_settings_section(ui, p);
                         ui.add_space(10.0);
 
-                        // 5. Paired devices
-                        self.render_paired_section(ui);
-                        ui.add_space(6.0);
-
-                        // 6. Logs
-                        self.render_logs_section(ui);
+                        // 5. Logs
+                        self.render_logs_section(ui, p);
                     });
                 });
         }
     }
 
     impl AnyDisplayApp {
-        fn render_pairing_modal(&mut self, ctx: &egui::Context) {
+        fn render_pairing_modal(&mut self, ctx: &egui::Context, p: Palette) {
             let Some(prompt) = &self.pairing_prompt else {
                 return;
             };
@@ -680,64 +797,78 @@ mod app {
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .frame(
+                    egui::Frame::NONE
+                        .fill(p.canvas)
+                        .stroke(Stroke::new(1.0, p.hairline))
+                        .corner_radius(CornerRadius::same(6))
+                        .inner_margin(Margin::same(18)),
+                )
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.add_space(6.0);
-                        ui.label(format!("Check that {title} shows this code:"));
-                        ui.add_space(10.0);
                         ui.label(
-                            egui::RichText::new(grouped)
-                                .monospace()
-                                .strong()
-                                .size(30.0)
-                                .color(egui::Color32::from_rgb(96, 165, 250)),
+                            RichText::new(format!("Check that {title} shows this code:"))
+                                .color(p.body),
                         );
-                        ui.add_space(14.0);
+                        ui.add_space(12.0);
+                        egui::Frame::NONE
+                            .fill(p.card_highlight)
+                            .stroke(Stroke::new(1.0, p.card_highlight_border))
+                            .corner_radius(CornerRadius::same(6))
+                            .inner_margin(Margin::symmetric(20, 10))
+                            .show(ui, |ui| {
+                                ui.label(
+                                    RichText::new(grouped)
+                                        .monospace()
+                                        .strong()
+                                        .size(30.0)
+                                        .color(p.ink),
+                                );
+                            });
+                        ui.add_space(16.0);
                         ui.horizontal(|ui| {
-                            if ui
-                                .add(
-                                    egui::Button::new(egui::RichText::new("Codes Match").strong())
-                                        .fill(egui::Color32::from_rgb(37, 99, 235)),
-                                )
-                                .clicked()
-                            {
+                            if accent_button(ui, "Codes Match", p).clicked() {
                                 decision = Some(true);
                             }
-                            if ui.button("Cancel").clicked() {
+                            if outline_button_sm(ui, "Cancel", p).clicked() {
                                 decision = Some(false);
                             }
                         });
-                        ui.add_space(4.0);
                     });
                 });
 
             if let Some(accepted) = decision {
-                if let Some(p) = self.pairing_prompt.take() {
-                    let _ = p.reply.send(accepted);
+                if let Some(pr) = self.pairing_prompt.take() {
+                    let _ = pr.reply.send(accepted);
                 }
             }
         }
 
-        fn render_connected_section(&mut self, ui: &mut egui::Ui) {
-            section_card(ui, "Connected", |ui| {
+        fn render_connected_section(&mut self, ui: &mut egui::Ui, p: Palette) {
+            highlight_card(ui, "CONNECTED", p, |ui| {
                 let mut to_disconnect: Vec<String> = Vec::new();
                 for (key, active) in &self.sessions {
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
-                            ui.label(egui::RichText::new(&active.title).strong());
                             ui.label(
-                                egui::RichText::new(describe_state(&active.state))
-                                    .small()
-                                    .color(egui::Color32::from_rgb(148, 163, 184)),
+                                RichText::new(&active.title)
+                                    .family(display_font())
+                                    .size(15.5)
+                                    .color(p.ink),
+                            );
+                            ui.label(
+                                RichText::new(describe_state(&active.state))
+                                    .size(12.0)
+                                    .color(if p.dark { p.body } else { p.forest }),
                             );
                         });
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button("Disconnect").clicked() {
+                            if primary_button_sm(ui, "Disconnect", p).clicked() {
                                 to_disconnect.push(key.clone());
                             }
                         });
                     });
-                    ui.add_space(4.0);
+                    ui.add_space(2.0);
                 }
                 for key in to_disconnect {
                     self.disconnect(&key);
@@ -745,7 +876,7 @@ mod app {
             });
         }
 
-        fn render_usb_section(&mut self, ui: &mut egui::Ui) {
+        fn render_usb_section(&mut self, ui: &mut egui::Ui, p: Palette) {
             let snap = self
                 .usb_snapshot
                 .lock()
@@ -759,11 +890,11 @@ mod app {
                 })
                 .unwrap_or((false, None, Vec::new(), None));
 
-            section_card(ui, "USB (ADB)", |ui| {
+            section_card(ui, "USB · ADB", p, |ui| {
                 if ui
                     .checkbox(
                         &mut self.auto_connect_usb,
-                        "Connect USB devices automatically",
+                        RichText::new("Connect USB devices automatically").color(p.ink),
                     )
                     .changed()
                     && self.auto_connect_usb
@@ -771,23 +902,23 @@ mod app {
                     self.usb_retry_after.clear();
                     self.last_auto_connect_check = Instant::now() - Duration::from_secs(5);
                 }
-                ui.add_space(4.0);
+                ui.add_space(6.0);
 
                 match snap {
                     (false, _, _, _) => {
                         ui.label(
-                            egui::RichText::new("Scanning USB devices (adb)…")
-                                .small()
-                                .color(egui::Color32::from_rgb(148, 163, 184)),
+                            RichText::new("Scanning USB devices (adb)…")
+                                .size(12.0)
+                                .color(p.muted),
                         );
                     }
                     (true, None, _, _) => {
                         ui.label(
-                            egui::RichText::new(
+                            RichText::new(
                                 "adb not found. Install Android Platform-Tools or set ANYDISPLAY_ADB.",
                             )
-                            .small()
-                            .color(egui::Color32::from_rgb(148, 163, 184)),
+                            .size(12.0)
+                            .color(p.muted),
                         );
                     }
                     (true, Some(_), devices, err) if devices.is_empty() => {
@@ -795,11 +926,7 @@ mod app {
                             "No authorized USB devices. Unlock device and enable USB debugging."
                                 .into()
                         });
-                        ui.label(
-                            egui::RichText::new(msg)
-                                .small()
-                                .color(egui::Color32::from_rgb(148, 163, 184)),
-                        );
+                        ui.label(RichText::new(msg).size(12.0).color(p.muted));
                     }
                     (true, Some(_), devices, _) => {
                         let mut to_connect: Option<UsbDevice> = None;
@@ -809,29 +936,22 @@ mod app {
                             let name = d.model.clone().unwrap_or_else(|| d.serial.clone());
                             ui.horizontal(|ui| {
                                 ui.vertical(|ui| {
-                                    ui.label(egui::RichText::new(&name).strong());
+                                    ui.label(RichText::new(&name).strong().size(13.5).color(p.ink));
                                     if d.model.is_some() {
                                         ui.label(
-                                            egui::RichText::new(&d.serial)
-                                                .small()
-                                                .color(egui::Color32::from_rgb(148, 163, 184)),
+                                            RichText::new(&d.serial)
+                                                .monospace()
+                                                .size(11.0)
+                                                .color(p.muted),
                                         );
                                     }
                                 });
                                 ui.with_layout(
                                     egui::Layout::right_to_left(egui::Align::Center),
                                     |ui| {
-                                        if ui
-                                            .add_enabled(
-                                                !connected,
-                                                egui::Button::new(if connected {
-                                                    "Connected"
-                                                } else {
-                                                    "Connect"
-                                                }),
-                                            )
-                                            .clicked()
-                                        {
+                                        if connected {
+                                            pill_outline_colored(ui, "CONNECTED", p.forest, p);
+                                        } else if accent_button(ui, "Connect", p).clicked() {
                                             to_connect = Some(d.clone());
                                         }
                                     },
@@ -846,112 +966,159 @@ mod app {
             });
         }
 
-        fn render_wifi_section(&mut self, ui: &mut egui::Ui) {
+        fn render_wifi_section(&mut self, ui: &mut egui::Ui, p: Palette) {
             let wifi_devices: Vec<NetworkDevice> = self
                 .wifi_monitor
                 .as_ref()
                 .map(|m| m.devices())
                 .unwrap_or_default();
 
-            section_card(ui, "Wi-Fi", |ui| {
+            let mut to_connect: Option<(String, String, String)> = None;
+            let mut to_forget: Option<String> = None;
+
+            let online_paired_ids: std::collections::HashSet<&str> = wifi_devices
+                .iter()
+                .filter_map(|d| d.device_id.as_deref())
+                .collect();
+            let offline_paired: Vec<(String, String)> = self
+                .paired_devices
+                .iter()
+                .filter(|(id, _)| !online_paired_ids.contains(id.as_str()))
+                .map(|(id, d)| (id.clone(), d.name.clone()))
+                .collect();
+
+            section_card(ui, "WI-FI", p, |ui| {
                 if let Some(err) = &self.wifi_error {
                     ui.label(
-                        egui::RichText::new(format!("mDNS unavailable: {err}"))
-                            .small()
-                            .color(egui::Color32::from_rgb(248, 113, 113)),
+                        RichText::new(format!("mDNS unavailable: {err}"))
+                            .size(12.0)
+                            .color(p.accent),
                     );
-                } else if wifi_devices.is_empty() {
+                } else if wifi_devices.is_empty() && offline_paired.is_empty() {
                     ui.label(
-                        egui::RichText::new(
+                        RichText::new(
                             "Searching for devices on the local network (_anydisplay._tcp)…",
                         )
-                        .small()
-                        .color(egui::Color32::from_rgb(148, 163, 184)),
+                        .size(12.0)
+                        .color(p.muted),
                     );
                 } else {
-                    let mut to_connect: Option<(String, String, String)> = None;
-                    for d in wifi_devices {
+                    for d in &wifi_devices {
                         let key = format!("net:{}", d.name);
                         let connected = self.sessions.contains_key(&key);
-                        let paired = d
+                        let paired_id = d
                             .device_id
                             .as_deref()
-                            .is_some_and(|id| self.paired_devices.contains_key(id));
+                            .filter(|id| self.paired_devices.contains_key(*id))
+                            .map(str::to_string);
                         let addr_str = d.addrs.first().map(|a| a.to_string()).unwrap_or_default();
 
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
-                                let title = if paired {
+                                let title = if paired_id.is_some() {
                                     d.name.clone()
                                 } else {
                                     format!("{} (not paired)", d.name)
                                 };
-                                ui.label(egui::RichText::new(title).strong());
+                                ui.label(RichText::new(title).strong().size(13.5).color(p.ink));
                                 if !addr_str.is_empty() {
                                     ui.label(
-                                        egui::RichText::new(&addr_str)
-                                            .small()
-                                            .color(egui::Color32::from_rgb(148, 163, 184)),
+                                        RichText::new(&addr_str)
+                                            .monospace()
+                                            .size(11.0)
+                                            .color(p.muted),
                                     );
                                 }
                             });
                             ui.with_layout(
                                 egui::Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    let can_connect = !connected && !addr_str.is_empty();
-                                    if ui
-                                        .add_enabled(
-                                            can_connect,
-                                            egui::Button::new(if connected {
-                                                "Connected"
-                                            } else {
-                                                "Connect"
-                                            }),
-                                        )
-                                        .clicked()
+                                    if connected {
+                                        pill_outline_colored(ui, "CONNECTED", p.forest, p);
+                                    } else if !addr_str.is_empty()
+                                        && accent_button(ui, "Connect", p).clicked()
                                     {
                                         to_connect = Some((key, d.name.clone(), addr_str));
+                                    }
+                                    if let Some(id) = paired_id {
+                                        if outline_button_sm(ui, "Forget", p)
+                                            .on_hover_text("Remove saved Wi-Fi pairing")
+                                            .clicked()
+                                        {
+                                            to_forget = Some(id);
+                                        }
                                     }
                                 },
                             );
                         });
+                        ui.add_space(4.0);
                     }
-                    if let Some((key, name, addr)) = to_connect {
-                        self.connect_network(key, name, addr);
+
+                    for (id, name) in &offline_paired {
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                ui.label(RichText::new(name).size(13.0).color(p.body));
+                                ui.label(
+                                    RichText::new("Paired · Offline").size(11.0).color(p.muted),
+                                );
+                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if outline_button_sm(ui, "Forget", p)
+                                        .on_hover_text("Remove saved Wi-Fi pairing")
+                                        .clicked()
+                                    {
+                                        to_forget = Some(id.clone());
+                                    }
+                                },
+                            );
+                        });
+                        ui.add_space(4.0);
                     }
                 }
 
-                ui.add_space(6.0);
-                ui.separator();
                 ui.add_space(4.0);
+                hairline_divider(ui, p);
+                ui.add_space(8.0);
                 ui.horizontal(|ui| {
                     let resp = ui.add(
                         egui::TextEdit::singleline(&mut self.manual_address)
                             .hint_text("Tablet IP, e.g. 192.168.1.20")
-                            .desired_width(ui.available_width() - 80.0),
+                            .margin(Margin::symmetric(8, 6))
+                            .desired_width(ui.available_width() - 84.0),
                     );
                     let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    let has_input = !self.manual_address.trim().is_empty();
                     let clicked = ui
-                        .add_enabled(
-                            !self.manual_address.trim().is_empty(),
-                            egui::Button::new("Connect"),
-                        )
+                        .add_enabled_ui(has_input, |ui| accent_button(ui, "Connect", p))
+                        .inner
                         .clicked();
-                    if (enter || clicked) && !self.manual_address.trim().is_empty() {
+                    if (enter || clicked) && has_input {
                         let target = self.manual_address.trim().to_string();
                         let key = format!("ip:{target}");
                         self.connect_network(key, target.clone(), target);
                     }
                 });
             });
+
+            if let Some((key, name, addr)) = to_connect {
+                self.connect_network(key, name, addr);
+            }
+            if let Some(id) = to_forget {
+                if let Ok(mut store) = PairingStore::open(PairingStore::default_path()) {
+                    let _ = store.forget_hex(&id);
+                    self.paired_devices = store.devices().clone();
+                }
+            }
         }
 
-        fn render_settings_section(&mut self, ui: &mut egui::Ui) {
+        fn render_settings_section(&mut self, ui: &mut egui::Ui, p: Palette) {
             let has_vdd = self.has_vdd();
-            section_card(ui, "Display & Stream", |ui| {
-                // Monitor selector
+            section_card(ui, "DISPLAY & STREAM", p, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label("Monitor:");
+                    ui.label(RichText::new("Monitor").size(12.5).color(p.body));
+                    ui.add_space(4.0);
                     let current_label = match self.selected_monitor {
                         None => {
                             if has_vdd {
@@ -970,7 +1137,7 @@ mod app {
 
                     egui::ComboBox::from_id_salt("monitor_select")
                         .selected_text(current_label)
-                        .width(230.0)
+                        .width(235.0)
                         .show_ui(ui, |ui| {
                             ui.selectable_value(
                                 &mut self.selected_monitor,
@@ -990,16 +1157,20 @@ mod app {
                             }
                         });
 
-                    if ui.button("↻").on_hover_text("Refresh monitors").clicked() {
+                    if outline_button_sm(ui, "↻", p)
+                        .on_hover_text("Refresh monitors")
+                        .clicked()
+                    {
                         self.monitors = query_monitors();
+                        self.last_monitor_refresh = Instant::now();
                     }
                 });
 
-                ui.add_space(4.0);
+                ui.add_space(6.0);
 
-                // Codec selector
                 ui.horizontal(|ui| {
-                    ui.label("Codec:  ");
+                    ui.label(RichText::new("Codec  ").size(12.5).color(p.body));
+                    ui.add_space(4.0);
                     let codec_label = match self.preferred_codec {
                         None => "Auto",
                         Some(Codec::Hevc) => "HEVC (H.265)",
@@ -1024,84 +1195,88 @@ mod app {
                         });
                 });
 
-                ui.add_space(4.0);
+                ui.add_space(6.0);
                 ui.horizontal(|ui| {
-                    ui.checkbox(&mut self.stream_audio, "Stream audio");
-                    ui.checkbox(&mut self.sync_clipboard, "Sync clipboard");
+                    ui.checkbox(
+                        &mut self.stream_audio,
+                        RichText::new("Stream audio").color(p.ink),
+                    );
+                    ui.add_space(12.0);
+                    ui.checkbox(
+                        &mut self.sync_clipboard,
+                        RichText::new("Sync clipboard").color(p.ink),
+                    );
                 });
+
+                if !has_vdd {
+                    ui.add_space(6.0);
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(
+                            RichText::new("Virtual Display Driver not installed (mirroring only).")
+                                .size(11.5)
+                                .color(p.muted),
+                        );
+                        let link = ui.add(
+                            egui::Label::new(
+                                RichText::new("Install VDD ↗")
+                                    .size(11.5)
+                                    .strong()
+                                    .color(p.accent),
+                            )
+                            .sense(egui::Sense::click()),
+                        );
+                        if link.hovered() {
+                            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                        }
+                        if link.clicked() {
+                            open_url(VDD_URL);
+                        }
+                    });
+                }
             });
         }
 
-        fn render_paired_section(&mut self, ui: &mut egui::Ui) {
-            let count = self.paired_devices.len();
-            egui::CollapsingHeader::new(format!("Paired Devices ({count})"))
-                .default_open(false)
-                .open(if self.show_paired { Some(true) } else { None })
-                .show(ui, |ui| {
-                    if self.paired_devices.is_empty() {
-                        ui.label(
-                            egui::RichText::new("No paired Wi-Fi devices yet.")
-                                .small()
-                                .color(egui::Color32::from_rgb(148, 163, 184)),
-                        );
-                        return;
-                    }
-                    let mut to_forget: Option<String> = None;
-                    for (id, d) in &self.paired_devices {
-                        ui.horizontal(|ui| {
-                            ui.label(&d.name);
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if ui.small_button("Forget").clicked() {
-                                        to_forget = Some(id.clone());
-                                    }
-                                },
-                            );
-                        });
-                    }
-                    if let Some(id) = to_forget {
-                        if let Ok(mut store) = PairingStore::open(PairingStore::default_path()) {
-                            let _ = store.forget_hex(&id);
-                            self.paired_devices = store.devices().clone();
-                        }
-                    }
-                    ui.add_space(4.0);
-                    if ui.small_button("Forget All").clicked() {
-                        if let Ok(mut store) = PairingStore::open(PairingStore::default_path()) {
-                            let _ = store.forget_all();
-                            self.paired_devices.clear();
-                        }
-                    }
-                });
-        }
-
-        fn render_logs_section(&mut self, ui: &mut egui::Ui) {
-            egui::CollapsingHeader::new("Logs")
+        fn render_logs_section(&mut self, ui: &mut egui::Ui, p: Palette) {
+            egui::CollapsingHeader::new(RichText::new("Logs").size(12.5).strong().color(p.ink))
                 .default_open(false)
                 .open(if self.show_logs { Some(true) } else { None })
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        if ui.checkbox(&mut self.verbose_logs, "Verbose").changed() {
+                        if ui
+                            .checkbox(
+                                &mut self.verbose_logs,
+                                RichText::new("Verbose").color(p.ink),
+                            )
+                            .changed()
+                        {
                             anydisplay::log::set_verbose(self.verbose_logs);
                         }
-                        if ui.small_button("Clear").clicked() {
+                        if outline_button_sm(ui, "Clear", p).clicked() {
                             anydisplay::log::clear_recent();
                         }
                     });
+                    ui.add_space(4.0);
                     let lines = anydisplay::log::recent();
-                    egui::ScrollArea::vertical()
-                        .max_height(140.0)
-                        .stick_to_bottom(true)
+                    egui::Frame::NONE
+                        .fill(p.card_bg)
+                        .stroke(Stroke::new(1.0, p.hairline))
+                        .corner_radius(CornerRadius::same(6))
+                        .inner_margin(Margin::same(8))
                         .show(ui, |ui| {
-                            for line in &lines {
-                                ui.label(
-                                    egui::RichText::new(line)
-                                        .monospace()
-                                        .size(11.0)
-                                        .color(egui::Color32::from_rgb(203, 213, 225)),
-                                );
-                            }
+                            egui::ScrollArea::vertical()
+                                .max_height(140.0)
+                                .stick_to_bottom(true)
+                                .show(ui, |ui| {
+                                    ui.set_width(ui.available_width());
+                                    for line in &lines {
+                                        ui.label(
+                                            RichText::new(line)
+                                                .monospace()
+                                                .size(11.0)
+                                                .color(p.body),
+                                        );
+                                    }
+                                });
                         });
                 });
         }
@@ -1174,7 +1349,7 @@ mod app {
                 hardware_encoder,
                 ..
             }) => format!(
-                "{width}×{height} @ {refresh_hz} Hz · {}{}{} ",
+                "{width}×{height} @ {refresh_hz} Hz · {}{}{}",
                 codec.name().to_uppercase(),
                 if *hardware_encoder { " (HW)" } else { " (SW)" },
                 if *mirroring {
@@ -1182,9 +1357,7 @@ mod app {
                 } else {
                     " · Extended"
                 },
-            )
-            .trim_end()
-            .to_string(),
+            ),
             SessionState::Closed(None) => "Disconnected".into(),
             SessionState::Closed(Some(e)) => format!("Error: {e}"),
         }
@@ -1394,7 +1567,8 @@ mod app {
         }
     }
 
-    /// Generates a crisp 32×32 overlapping-displays RGBA icon (accented green when streaming).
+    /// Generates a 32×32 overlapping-displays RGBA icon in the AnyDisplay palette
+    /// (deep ink + burnt orange when idle; forest + signature lime when streaming).
     fn make_icon_rgba(streaming: bool) -> (Vec<u8>, u32, u32) {
         let (w, h) = (32u32, 32u32);
         let mut buf = vec![0u8; (w * h * 4) as usize];
@@ -1435,24 +1609,25 @@ mod app {
             }
         };
 
-        let back_border = [148, 163, 184, 255];
-        let back_fill = [30, 41, 59, 255];
-        let front_border = if streaming {
-            [52, 211, 153, 255]
+        let (back_fill, back_border, front_fill, front_border) = if streaming {
+            (
+                [0x25, 0x3E, 0x34, 0xFF], // forest
+                [0xF5, 0xF3, 0xEC, 0xFF], // cream
+                [0xD9, 0xED, 0x9D, 0xFF], // signature lime
+                [0x24, 0x28, 0x20, 0xFF], // ink
+            )
         } else {
-            [241, 245, 249, 255]
-        };
-        let front_fill = if streaming {
-            [16, 185, 129, 255]
-        } else {
-            [59, 130, 246, 255]
+            (
+                [0x24, 0x28, 0x20, 0xFF], // ink
+                [0xF5, 0xF3, 0xEC, 0xFF], // cream
+                [0xC7, 0x4B, 0x29, 0xFF], // burnt orange
+                [0xF5, 0xF3, 0xEC, 0xFF], // cream
+            )
         };
 
-        // Back display
         fill_rect(&mut set_px, 3, 4, 22, 19, back_fill);
         stroke_rect(&mut set_px, 3, 4, 22, 19, 2, back_border);
 
-        // Front display (overlapping bottom-right)
         fill_rect(&mut set_px, 10, 12, 29, 27, front_fill);
         stroke_rect(&mut set_px, 10, 12, 29, 27, 2, front_border);
 
@@ -1489,10 +1664,6 @@ mod app {
             .unwrap_or_else(|| "AnyDisplay host".into())
     }
 
-    fn is_elevated() -> bool {
-        unsafe { windows::Win32::UI::Shell::IsUserAnAdmin().as_bool() }
-    }
-
     fn open_url(url: &str) {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -1502,61 +1673,267 @@ mod app {
             .spawn();
     }
 
-    fn configure_theme(ctx: &egui::Context) {
-        let mut visuals = egui::Visuals::dark();
-        visuals.window_corner_radius = egui::CornerRadius::same(8);
-        visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(6);
-        visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(6);
-        visuals.widgets.active.corner_radius = egui::CornerRadius::same(6);
+    fn display_font() -> egui::FontFamily {
+        egui::FontFamily::Name("display".into())
+    }
+
+    fn install_fonts(ctx: &egui::Context) {
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "dm_sans".into(),
+            Arc::new(egui::FontData::from_static(include_bytes!(
+                "../assets/fonts/DMSans-Regular.ttf"
+            ))),
+        );
+        fonts.font_data.insert(
+            "manrope_semibold".into(),
+            Arc::new(egui::FontData::from_static(include_bytes!(
+                "../assets/fonts/Manrope-SemiBold.ttf"
+            ))),
+        );
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "dm_sans".into());
+        fonts.families.insert(
+            display_font(),
+            vec!["manrope_semibold".into(), "dm_sans".into()],
+        );
+        ctx.set_fonts(fonts);
+    }
+
+    fn apply_theme(ctx: &egui::Context, p: Palette) {
+        let mut visuals = if p.dark {
+            egui::Visuals::dark()
+        } else {
+            egui::Visuals::light()
+        };
+
+        visuals.panel_fill = p.canvas;
+        visuals.window_fill = p.canvas;
+        visuals.faint_bg_color = p.card_bg;
+        visuals.extreme_bg_color = p.input_bg;
+        visuals.override_text_color = Some(p.ink);
+        visuals.window_stroke = Stroke::new(1.0, p.hairline);
+        visuals.window_corner_radius = CornerRadius::same(6);
+        visuals.window_shadow = egui::Shadow::NONE;
+        visuals.popup_shadow = egui::Shadow::NONE;
+
+        visuals.selection.bg_fill = p.accent;
+        visuals.selection.stroke = Stroke::new(1.0, Color32::WHITE);
+
+        visuals.widgets.noninteractive.bg_fill = p.card_bg;
+        visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0, p.hairline);
+        visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0, p.ink);
+        visuals.widgets.noninteractive.corner_radius = CornerRadius::same(5);
+
+        visuals.widgets.inactive.bg_fill = p.input_bg;
+        visuals.widgets.inactive.weak_bg_fill = p.input_bg;
+        visuals.widgets.inactive.bg_stroke = Stroke::new(1.0, p.hairline);
+        visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, p.ink);
+        visuals.widgets.inactive.corner_radius = CornerRadius::same(5);
+
+        visuals.widgets.hovered.bg_fill = p.card_bg;
+        visuals.widgets.hovered.weak_bg_fill = p.card_bg;
+        visuals.widgets.hovered.bg_stroke = Stroke::new(1.0, p.sage);
+        visuals.widgets.hovered.fg_stroke = Stroke::new(1.0, p.ink);
+        visuals.widgets.hovered.corner_radius = CornerRadius::same(5);
+
+        visuals.widgets.active.bg_fill = p.accent_hover;
+        visuals.widgets.active.weak_bg_fill = p.accent_hover;
+        visuals.widgets.active.bg_stroke = Stroke::new(1.0, p.accent);
+        visuals.widgets.active.fg_stroke = Stroke::new(1.0, Color32::WHITE);
+        visuals.widgets.active.corner_radius = CornerRadius::same(5);
+
+        visuals.widgets.open.bg_fill = p.card_bg;
+        visuals.widgets.open.weak_bg_fill = p.card_bg;
+        visuals.widgets.open.bg_stroke = Stroke::new(1.0, p.ink);
+        visuals.widgets.open.fg_stroke = Stroke::new(1.0, p.ink);
+        visuals.widgets.open.corner_radius = CornerRadius::same(5);
+
         ctx.set_visuals(visuals);
     }
 
-    fn section_card(ui: &mut egui::Ui, title: &str, body: impl FnOnce(&mut egui::Ui)) {
+    fn section_card(ui: &mut egui::Ui, title: &str, p: Palette, body: impl FnOnce(&mut egui::Ui)) {
         egui::Frame::NONE
-            .fill(egui::Color32::from_rgb(34, 38, 47))
-            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(51, 57, 70)))
-            .corner_radius(egui::CornerRadius::same(8))
-            .inner_margin(egui::Margin::same(10))
+            .fill(p.card_bg)
+            .stroke(Stroke::new(1.0, p.hairline))
+            .corner_radius(CornerRadius::same(6))
+            .inner_margin(Margin::same(12))
             .show(ui, |ui| {
                 ui.set_width(ui.available_width());
                 ui.label(
-                    egui::RichText::new(title)
-                        .strong()
-                        .size(13.0)
-                        .color(egui::Color32::from_rgb(226, 232, 240)),
+                    RichText::new(title)
+                        .family(display_font())
+                        .size(10.5)
+                        .color(p.muted),
                 );
                 ui.add_space(6.0);
                 body(ui);
             });
     }
 
-    fn status_badge(ui: &mut egui::Ui, text: &str, color: egui::Color32) -> egui::Response {
+    fn highlight_card(
+        ui: &mut egui::Ui,
+        title: &str,
+        p: Palette,
+        body: impl FnOnce(&mut egui::Ui),
+    ) {
         egui::Frame::NONE
-            .fill(color.linear_multiply(0.18))
-            .stroke(egui::Stroke::new(1.0, color.linear_multiply(0.65)))
-            .corner_radius(egui::CornerRadius::same(10))
-            .inner_margin(egui::Margin::symmetric(8, 2))
+            .fill(p.card_highlight)
+            .stroke(Stroke::new(1.0, p.card_highlight_border))
+            .corner_radius(CornerRadius::same(6))
+            .inner_margin(Margin::same(12))
             .show(ui, |ui| {
-                ui.label(egui::RichText::new(text).small().strong().color(color));
+                ui.set_width(ui.available_width());
+                ui.label(
+                    RichText::new(title)
+                        .family(display_font())
+                        .size(10.5)
+                        .color(p.forest),
+                );
+                ui.add_space(6.0);
+                body(ui);
+            });
+    }
+
+    /// Vector Sun (when dark) / Moon (when light) theme toggle button.
+    fn theme_icon_button(ui: &mut egui::Ui, dark_mode: bool, p: Palette) -> egui::Response {
+        let size = egui::vec2(28.0, 26.0);
+        let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+        if ui.is_rect_visible(rect) {
+            let bg = if resp.hovered() { p.card_bg } else { p.canvas };
+            let border = if resp.hovered() { p.sage } else { p.hairline };
+            let painter = ui.painter();
+            painter.rect(
+                rect,
+                CornerRadius::same(5),
+                bg,
+                Stroke::new(1.0, border),
+                egui::StrokeKind::Inside,
+            );
+            let c = rect.center();
+            let fg = p.ink;
+            if dark_mode {
+                // Sun icon (switch to light)
+                painter.circle_stroke(c, 4.0, Stroke::new(1.5, fg));
+                for i in 0..8 {
+                    let angle = (i as f32) * std::f32::consts::FRAC_PI_4;
+                    let (s, cs) = angle.sin_cos();
+                    let p0 = egui::pos2(c.x + cs * 6.0, c.y + s * 6.0);
+                    let p1 = egui::pos2(c.x + cs * 8.0, c.y + s * 8.0);
+                    painter.line_segment([p0, p1], Stroke::new(1.4, fg));
+                }
+            } else {
+                // Crescent moon icon (switch to dark)
+                painter.circle_filled(c, 6.0, fg);
+                painter.circle_filled(egui::pos2(c.x + 2.6, c.y - 2.2), 5.2, bg);
+            }
+        }
+        resp
+    }
+
+    fn hairline_divider(ui: &mut egui::Ui, p: Palette) {
+        let (rect, _) =
+            ui.allocate_exact_size(egui::vec2(ui.available_width(), 1.0), egui::Sense::hover());
+        ui.painter().rect_filled(rect, 0.0, p.hairline);
+    }
+
+    fn accent_button(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
+        ui.add(
+            egui::Button::new(
+                RichText::new(text)
+                    .size(12.5)
+                    .strong()
+                    .color(Color32::WHITE),
+            )
+            .fill(p.accent)
+            .stroke(Stroke::NONE)
+            .corner_radius(CornerRadius::same(5))
+            .min_size(egui::vec2(72.0, 28.0)),
+        )
+    }
+
+    fn primary_button_sm(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
+        ui.add(
+            egui::Button::new(RichText::new(text).size(12.0).strong().color(p.on_primary))
+                .fill(p.primary)
+                .stroke(Stroke::NONE)
+                .corner_radius(CornerRadius::same(5))
+                .min_size(egui::vec2(0.0, 26.0)),
+        )
+    }
+
+    fn outline_button_sm(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
+        ui.add(
+            egui::Button::new(RichText::new(text).size(12.0).color(p.ink))
+                .fill(p.canvas)
+                .stroke(Stroke::new(1.0, p.hairline))
+                .corner_radius(CornerRadius::same(5))
+                .min_size(egui::vec2(0.0, 26.0)),
+        )
+    }
+
+    fn pill_outline(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
+        pill_outline_colored(ui, text, p.muted, p)
+    }
+
+    fn pill_outline_colored(
+        ui: &mut egui::Ui,
+        text: &str,
+        text_color: Color32,
+        p: Palette,
+    ) -> egui::Response {
+        egui::Frame::NONE
+            .fill(p.canvas)
+            .stroke(Stroke::new(1.0, p.hairline))
+            .corner_radius(CornerRadius::same(4))
+            .inner_margin(Margin::symmetric(8, 3))
+            .show(ui, |ui| {
+                ui.label(RichText::new(text).size(9.5).strong().color(text_color));
             })
             .response
     }
 
-    fn error_banner(ui: &mut egui::Ui, msg: &str, on_dismiss: impl FnOnce()) {
+    fn pill_filled(
+        ui: &mut egui::Ui,
+        text: &str,
+        bg: Color32,
+        fg: Color32,
+        border: Color32,
+    ) -> egui::Response {
         egui::Frame::NONE
-            .fill(egui::Color32::from_rgb(69, 26, 26))
-            .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(239, 68, 68)))
-            .corner_radius(egui::CornerRadius::same(6))
-            .inner_margin(egui::Margin::same(8))
+            .fill(bg)
+            .stroke(Stroke::new(1.0, border))
+            .corner_radius(CornerRadius::same(4))
+            .inner_margin(Margin::symmetric(8, 3))
+            .show(ui, |ui| {
+                ui.label(RichText::new(text).size(9.5).strong().color(fg));
+            })
+            .response
+    }
+
+    fn error_banner(ui: &mut egui::Ui, msg: &str, p: Palette, on_dismiss: impl FnOnce()) {
+        egui::Frame::NONE
+            .fill(p.error_bg)
+            .stroke(Stroke::new(1.0, p.error_border))
+            .corner_radius(CornerRadius::same(6))
+            .inner_margin(Margin::same(10))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new(msg)
-                            .small()
-                            .color(egui::Color32::from_rgb(254, 202, 202)),
-                    );
+                    ui.label(RichText::new(msg).size(12.0).color(p.error_text));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.small_button("×").clicked() {
+                        if ui
+                            .add(
+                                egui::Button::new(RichText::new("×").color(p.error_text))
+                                    .frame(false),
+                            )
+                            .clicked()
+                        {
                             on_dismiss();
                         }
                     });
