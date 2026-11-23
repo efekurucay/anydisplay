@@ -15,6 +15,16 @@ and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and in
 | Clipboard | `text/plain` both ways |
 | Transport | Wi-Fi (mDNS `_anydisplay._tcp` discovery, or a typed address) and USB (`adb forward`) |
 
+## Install
+
+Download and run **`AnyDisplay-windows-x64-setup.exe`** from the
+[latest release](https://github.com/efekurucay/anydisplay/releases/latest). The installer sets up
+both `anydisplay-gui.exe` (Start Menu + system tray) and `anydisplay-win.exe` (CLI on `PATH`), and
+optionally installs the Virtual Display Driver, common tablet/phone display resolutions, and
+Android Platform-Tools (`adb`) via `winget`.
+
+A portable `.zip` is also attached to each release if you prefer not to use the installer.
+
 ## Build
 
 Needs Rust 1.82 or newer.
@@ -23,6 +33,7 @@ Needs Rust 1.82 or newer.
 cargo build --release                 # on Windows: target\release\anydisplay-win.exe and anydisplay-gui.exe
 cargo test                            # any OS: protocol, crypto vectors, sessions, input translation
 cargo check --target x86_64-pc-windows-msvc   # check the Windows code from macOS / Linux
+iscc installer\anydisplay.iss         # optional: build installer\out\AnyDisplay-windows-x64-setup.exe (Inno Setup 6)
 ```
 
 For the last one, run `rustup target add x86_64-pc-windows-msvc` first. It only type-checks:

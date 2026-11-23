@@ -44,12 +44,19 @@ jobs:
           workspaces: windows
       - run: cargo test
       - run: cargo build --release
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          & $iscc installer/anydisplay.iss
       - uses: actions/upload-artifact@v4
         with:
           name: anydisplay-win
           path: |
             windows/target/release/anydisplay-win.exe
             windows/target/release/anydisplay-gui.exe
+            windows/installer/out/AnyDisplay-windows-x64-setup.exe
 
   android:
     name: Android client

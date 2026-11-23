@@ -1216,15 +1216,25 @@ mod app {
 
                 if !has_vdd {
                     ui.add_space(6.0);
+                    let vdd_installed = std::path::Path::new(r"C:\VirtualDisplayDriver").is_dir();
                     ui.horizontal_wrapped(|ui| {
-                        ui.label(
-                            RichText::new("Virtual Display Driver not installed (mirroring only).")
-                                .size(11.5)
-                                .color(p.muted),
-                        );
+                        let (msg, link_text, target_url) = if vdd_installed {
+                            (
+                                "Virtual Display Driver is installed, but displays are set to duplicate or disabled.",
+                                "Display Settings ↗",
+                                "ms-settings:display",
+                            )
+                        } else {
+                            (
+                                "Virtual Display Driver not installed (mirroring only).",
+                                "Install VDD ↗",
+                                VDD_URL,
+                            )
+                        };
+                        ui.label(RichText::new(msg).size(11.5).color(p.muted));
                         let link = ui.add(
                             egui::Label::new(
-                                RichText::new("Install VDD ↗")
+                                RichText::new(link_text)
                                     .size(11.5)
                                     .strong()
                                     .color(p.accent),
@@ -1235,7 +1245,7 @@ mod app {
                             ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
                         }
                         if link.clicked() {
-                            open_url(VDD_URL);
+                            open_url(target_url);
                         }
                     });
                 }
