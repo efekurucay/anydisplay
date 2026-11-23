@@ -156,7 +156,8 @@ extended display; without it, AnyDisplay mirrors a monitor.
 ```powershell
 cd windows
 cargo build --release
-target\release\anydisplay-win.exe list
+target\release\anydisplay-gui.exe         # system tray GUI app
+target\release\anydisplay-win.exe list    # or use the CLI
 target\release\anydisplay-win.exe usb
 ```
 
@@ -168,7 +169,7 @@ See [`windows/README.md`](windows/README.md) for options and driver setup.
 |---|---|---|
 | [`android/`](android) | Client app | Kotlin, MediaCodec, Material 3 |
 | [`macos/`](macos) | Mac host: CLI and menu bar app | Swift, CGVirtualDisplay, ScreenCaptureKit, VideoToolbox |
-| [`windows/`](windows) | Windows host | Rust, DXGI Desktop Duplication, Media Foundation, synthetic pointer input, WASAPI |
+| [`windows/`](windows) | Windows host: CLI and GUI/tray app | Rust, egui, DXGI Desktop Duplication, Media Foundation, synthetic pointer input, WASAPI |
 | [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | AnyDisplay Protocol v1 | |
 | [`tools/anydisplay_ref.py`](tools/anydisplay_ref.py) | Reference host and client, test vector generator | Python, `cryptography`, ffmpeg |
 

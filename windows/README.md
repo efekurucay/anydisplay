@@ -20,7 +20,7 @@ and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and in
 Needs Rust 1.82 or newer.
 
 ```sh
-cargo build --release                 # on Windows: target\release\anydisplay-win.exe
+cargo build --release                 # on Windows: target\release\anydisplay-win.exe and anydisplay-gui.exe
 cargo test                            # any OS: protocol, crypto vectors, sessions, input translation
 cargo check --target x86_64-pc-windows-msvc   # check the Windows code from macOS / Linux
 ```
@@ -29,6 +29,15 @@ For the last one, run `rustup target add x86_64-pc-windows-msvc` first. It only 
 linking a Windows binary needs the MSVC toolchain.
 
 ## Use
+
+### GUI (system tray app)
+
+Run `target\release\anydisplay-gui.exe` for the desktop GUI and system tray app. It monitors USB
+(`adb`) and Wi-Fi (`_anydisplay._tcp`) devices continuously, supports automatic USB connection,
+shows the 6-digit Wi-Fi pairing dialog, lets you pick the monitor/codec/audio/clipboard options,
+and minimizes to the system tray when closed.
+
+### Command line
 
 ```text
 anydisplay-win list [--seconds N]              monitors, USB (adb) and Wi-Fi (mDNS) clients, paired devices
@@ -120,6 +129,7 @@ A KEYFRAME_REQ restarts ffmpeg, whose first output is an IDR frame with SPS/PPS.
 ```text
 src/
   main.rs            anydisplay-win CLI (list / usb / connect, SAS prompt, Ctrl-C → BYE)
+  gui.rs             anydisplay-gui Windows egui + system tray app
   lib.rs
   proto/             PROTOCOL.md, platform-independent
     wire.rs          little-endian primitives, str / blob

@@ -47,7 +47,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: anydisplay-win
-          path: windows/target/release/anydisplay-win.exe
+          path: |
+            windows/target/release/anydisplay-win.exe
+            windows/target/release/anydisplay-gui.exe
 
   android:
     name: Android client

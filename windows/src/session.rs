@@ -43,6 +43,29 @@ const AUDIO_QUEUE_LIMIT: usize = 50;
 
 pub type SasPrompt = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 
+#[derive(Debug, Clone)]
+pub struct StreamInfo {
+    pub device_name: String,
+    pub width: u16,
+    pub height: u16,
+    pub refresh_hz: u16,
+    pub codec: Codec,
+    pub mirroring: bool,
+    pub hardware_encoder: bool,
+    pub source: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum SessionState {
+    Connecting,
+    Handshaking,
+    ConfirmingCode(String),
+    Streaming(StreamInfo),
+    Closed(Option<String>),
+}
+
+pub type StateCallback = Arc<dyn Fn(SessionState) + Send + Sync>;
+
 #[derive(Clone)]
 pub struct SessionConfig {
     pub host_name: String,
@@ -391,6 +414,7 @@ fn run_handshake(
     cfg: &SessionConfig,
     prompt: &SasPrompt,
     handle: &SessionHandle,
+    on_state: Option<&StateCallback>,
 ) -> anyhow::Result<HandshakeOutcome> {
     stream.set_read_timeout(Some(Duration::from_millis(100)))?;
     let mut decoder = FrameDecoder::default();
@@ -412,6 +436,9 @@ fn run_handshake(
                 }
                 Action::ShowSas(code) => {
                     info!("pairing code {code}");
+                    if let Some(cb) = on_state {
+                        cb(SessionState::ConfirmingCode(code.clone()));
+                    }
                     if cfg.auto_confirm {
                         let _ = decision_tx.send(true);
                     } else {
@@ -479,6 +506,7 @@ fn connect_and_handshake(
     cfg: &SessionConfig,
     prompt: &SasPrompt,
     handle: &SessionHandle,
+    on_state: Option<&StateCallback>,
 ) -> anyhow::Result<Box<Established>> {
     let identity = HostIdentity {
         host_id: store.host_id(),
@@ -487,6 +515,9 @@ fn connect_and_handshake(
     };
     let mut retries = 0;
     loop {
+        if let Some(cb) = on_state {
+            cb(SessionState::Connecting);
+        }
         let stream = match TcpStream::connect_timeout(&addr, Duration::from_secs(10)) {
             Ok(s) => s,
             // While re-pairing, the client may still be restarting its listener.
@@ -499,6 +530,9 @@ fn connect_and_handshake(
         };
         stream.set_nodelay(true)?;
         info!("connected to {addr}");
+        if let Some(cb) = on_state {
+            cb(SessionState::Handshaking);
+        }
         let secrets: std::collections::BTreeMap<[u8; 16], [u8; 32]> = store
             .devices()
             .keys()
@@ -506,7 +540,7 @@ fn connect_and_handshake(
             .filter_map(|id: [u8; 16]| Some((id, store.secret(&id)?)))
             .collect();
         let hs = HostHandshake::new(identity.clone(), move |id| secrets.get(id).copied());
-        match run_handshake(stream, hs, cfg, prompt, handle)? {
+        match run_handshake(stream, hs, cfg, prompt, handle, on_state)? {
             HandshakeOutcome::Ok(e) => return Ok(e),
             HandshakeOutcome::Failed(
                 HandshakeError::PeerFailed(auth_fail::UNKNOWN_HOST),
@@ -608,7 +642,37 @@ pub fn run(
     prompt: SasPrompt,
     handle: &SessionHandle,
 ) -> anyhow::Result<SessionSummary> {
-    let est = *connect_and_handshake(addr, store, platform, cfg, &prompt, handle)?;
+    run_with_state(addr, store, platform, cfg, prompt, handle, None)
+}
+
+/// Like [`run`], notifying `on_state` as the session moves through connecting, handshaking,
+/// pairing confirmation, streaming, and closing.
+pub fn run_with_state(
+    addr: SocketAddr,
+    store: &mut PairingStore,
+    platform: &mut dyn Platform,
+    cfg: &SessionConfig,
+    prompt: SasPrompt,
+    handle: &SessionHandle,
+    on_state: Option<StateCallback>,
+) -> anyhow::Result<SessionSummary> {
+    let est = match connect_and_handshake(
+        addr,
+        store,
+        platform,
+        cfg,
+        &prompt,
+        handle,
+        on_state.as_ref(),
+    ) {
+        Ok(e) => *e,
+        Err(e) => {
+            if let Some(cb) = &on_state {
+                cb(SessionState::Closed(Some(format!("{e:#}"))));
+            }
+            return Err(e);
+        }
+    };
     let r = &est.result;
     if let Some(secret) = r.pair_secret {
         store.pair(&r.device_id, &r.device_name, &secret)?;
@@ -662,6 +726,7 @@ pub fn run(
         audio: None,
         end_at: None,
         next_clipboard: now,
+        on_state: on_state.clone(),
         summary: SessionSummary {
             device_name: est.result.device_name.clone(),
             mode: Some(est.result.mode),
@@ -700,6 +765,9 @@ pub fn run(
         "wrote {} video frames to the socket in {} stream(s)",
         summary.frames_sent, summary.streams
     );
+    if let Some(cb) = &on_state {
+        cb(SessionState::Closed(summary.error.clone()));
+    }
     Ok(summary)
 }
 
@@ -741,6 +809,7 @@ struct Live<'a> {
     audio: Option<AudioStream>,
     end_at: Option<Instant>,
     next_clipboard: Instant,
+    on_state: Option<StateCallback>,
     summary: SessionSummary,
 }
 
@@ -1050,6 +1119,18 @@ impl Live<'_> {
         self.summary.streams += 1;
         self.summary.last_config = Some(config);
         self.phase = Phase::Streaming;
+        if let Some(cb) = &self.on_state {
+            cb(SessionState::Streaming(StreamInfo {
+                device_name: self.summary.device_name.clone(),
+                width: opened.width as u16,
+                height: opened.height as u16,
+                refresh_hz: opened.fps as u16,
+                codec: opened.codec,
+                mirroring: flags & stream_flags::MIRROR != 0,
+                hardware_encoder: opened.hardware_encoder,
+                source: opened.source,
+            }));
+        }
         if self.end_at.is_none() {
             self.end_at = self.cfg.duration.map(|d| Instant::now() + d);
         }
