@@ -19,9 +19,12 @@ and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and in
 
 Download and run **`AnyDisplay-windows-x64-setup.exe`** from the
 [latest release](https://github.com/efekurucay/anydisplay/releases/latest). The installer sets up
-both `anydisplay-gui.exe` (Start Menu + system tray) and `anydisplay-win.exe` (CLI on `PATH`), and
-optionally installs the Virtual Display Driver, common tablet/phone display resolutions, and
-Android Platform-Tools (`adb`) via `winget`.
+both `anydisplay-gui.exe` (Start Menu + system tray) and `anydisplay-win.exe` (with an option to add
+it to `PATH`). It can also install Android Platform-Tools (`adb`) via `winget`.
+
+For an extended desktop, follow the [Virtual Display Driver setup](#extra-monitor-virtual-display-driver-setup).
+If the driver configuration is already present, the installer offers common tablet and phone
+resolutions. Reload the driver or restart Windows to apply them.
 
 A portable `.zip` is also attached to each release if you prefer not to use the installer.
 
@@ -86,10 +89,11 @@ Windows only adds a monitor when a display driver provides one. AnyDisplay does 
 uses the open-source, MIT-licensed Virtual Display Driver (an IddCx driver by VirtualDrivers /
 MikeTheTech) when that driver is installed.
 
-1. Install it with `winget install --id=VirtualDrivers.Virtual-Display-Driver -e`, or run the
-   *Virtual Driver Control* app from the project's
+1. Open *Virtual Driver Control* from the project's
    [releases](https://github.com/VirtualDrivers/Virtual-Display-Driver/releases) and click
-   Install. If you see a `vcruntime140.dll` error, install the Microsoft Visual C++ Redistributable.
+   **Install** for the display driver. You can also get the Control app with
+   `winget install --id=VirtualDrivers.Virtual-Display-Driver -e`. If you see a `vcruntime140.dll`
+   error, install the Microsoft Visual C++ Redistributable.
 2. Make the driver offer your tablet's resolution in both orientations, for example
    `2560x1600` and `1600x2560` at 60 Hz. Resolutions and the monitor count are configured in
    `C:\VirtualDisplayDriver\vdd_settings.xml` or through the Control app; the project wiki has

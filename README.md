@@ -91,7 +91,7 @@ The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](doc
 |---|---|
 | [**AnyDisplay.apk**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay.apk) | The Android phone or tablet (Android 8.0+) |
 | [**AnyDisplay-macOS.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
-| [**AnyDisplay-windows-x64.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip) | Windows 10 (1809) / 11, experimental |
+| [**AnyDisplay Windows setup**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
 
 These links always serve the newest version. Checksums and older versions are on the
 [releases page](https://github.com/efekurucay/anydisplay/releases).
@@ -106,8 +106,9 @@ on the computer and a data-capable USB cable.
    macOS blocks the first launch: open it once, then choose *System Settings → Privacy & Security →
    Open Anyway*. Or run `xattr -dr com.apple.quarantine /Applications/AnyDisplay.app`.
    AnyDisplay lives in the menu bar.
-3. **Windows:** unzip and run `anydisplay-win.exe list`, then `anydisplay-win.exe usb` or
-   `anydisplay-win.exe connect <device IP>` from a terminal. See [`windows/README.md`](windows/README.md).
+3. **Windows:** run the setup and open **AnyDisplay** from the Start menu. With the portable ZIP,
+   extract it and run `anydisplay-gui.exe`. See the [Windows guide](windows/README.md) for
+   extended display setup and command-line usage.
 
 Open the app on the device, then connect from the computer. The first Wi-Fi connection shows the
 same 6-digit code on both screens; accept it on both.

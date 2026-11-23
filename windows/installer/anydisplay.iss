@@ -1,10 +1,10 @@
 ; AnyDisplay Windows installer (Inno Setup 6)
 ; Build locally from windows\:
 ;   cargo build --release
-;   iscc /DAppVersion=0.1.3 installer\anydisplay.iss
+;   iscc installer\anydisplay.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.1.3"
+  #define AppVersion "0.1.4"
 #endif
 
 #ifndef OutputBaseFilename
@@ -46,16 +46,15 @@ RestartApplications=no
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-WelcomeLabel2=This will install AnyDisplay on your PC so you can use any Android phone or tablet as a second monitor, touch screen, and pen tablet.%n%nSetup can also install the optional Virtual Display Driver (for extended mode) and USB tools automatically.
+WelcomeLabel2=This will install AnyDisplay on your PC so you can use any Android phone or tablet as a second monitor, touch screen, and pen tablet.%n%nFor extended display, follow the Virtual Display Driver setup in the AnyDisplay README. Setup can install the optional USB tools.
 WizardSelectTasks=Customize Your Setup
 SelectTasksDesc=Choose the extras you want to include.
 SelectTasksLabel2=Recommended options are already checked. Click Next when you're ready.
 FinishedHeadingLabel=AnyDisplay is ready!
-FinishedLabel=AnyDisplay has been installed on your computer.%n%nOpen the AnyDisplay app on your Android phone or tablet to connect over Wi-Fi or USB.
+FinishedLabel=AnyDisplay has been installed on your computer.%n%nOpen AnyDisplay on your Android device to connect over Wi-Fi or USB.%n%nIf you added display resolutions, reload the driver or restart Windows to apply them.
 
 [Tasks]
-Name: "installvdd"; Description: "Enable extended display (installs Virtual Display Driver via winget)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferVddInstall
-Name: "vddresolutions"; Description: "Add native Android tablet && phone resolutions (avoids black bars && scaling)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferVddResolutions
+Name: "vddresolutions"; Description: "Add Android tablet && phone resolutions (driver reload required)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferVddResolutions
 Name: "installadb"; Description: "Enable USB cable connections (installs Android Platform-Tools / adb via winget)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferAdbInstall
 Name: "autostart"; Description: "Launch AnyDisplay automatically when Windows starts"; GroupDescription: "Shortcuts & startup:"; Flags: unchecked
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts & startup:"; Flags: unchecked
@@ -66,7 +65,7 @@ Source: "..\target\release\anydisplay-gui.exe"; DestDir: "{app}"; Flags: ignorev
 Source: "..\target\release\anydisplay-win.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-Source: "add-vdd-resolutions.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "add-vdd-resolutions.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall; Tasks: vddresolutions
 
 [Icons]
 Name: "{group}\AnyDisplay"; Filename: "{app}\anydisplay-gui.exe"; Comment: "Turn an Android phone or tablet into a second monitor"
@@ -77,16 +76,13 @@ Name: "{autodesktop}\AnyDisplay"; Filename: "{app}\anydisplay-gui.exe"; Tasks: d
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AnyDisplay"; ValueData: """{app}\anydisplay-gui.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
-Filename: "{localappdata}\Microsoft\WindowsApps\winget.exe"; Parameters: "install --id=VirtualDrivers.Virtual-Display-Driver -e --accept-source-agreements --accept-package-agreements"; StatusMsg: "Installing Virtual Display Driver via winget..."; Flags: waituntilterminated; Tasks: installvdd
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{tmp}\add-vdd-resolutions.ps1"""; StatusMsg: "Configuring Virtual Display Driver resolutions..."; Flags: runhidden waituntilterminated; Tasks: vddresolutions
 Filename: "{localappdata}\Microsoft\WindowsApps\winget.exe"; Parameters: "install --id=Google.PlatformTools -e --accept-source-agreements --accept-package-agreements"; StatusMsg: "Installing Android Platform-Tools (adb) via winget..."; Flags: waituntilterminated; Tasks: installadb
 Filename: "{app}\anydisplay-gui.exe"; Description: "{cm:LaunchProgram,AnyDisplay}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-function IsVddInstalled: Boolean;
-begin
-  Result := DirExists('C:\VirtualDisplayDriver');
-end;
+const
+  InstallerKey = 'Software\AnyDisplay\Installer';
+  PathValueName = 'AddedPath';
 
 function HasWinget: Boolean;
 begin
@@ -129,14 +125,9 @@ begin
   end;
 end;
 
-function ShouldOfferVddInstall: Boolean;
-begin
-  Result := (not IsVddInstalled) and HasWinget;
-end;
-
 function ShouldOfferVddResolutions: Boolean;
 begin
-  Result := IsVddInstalled or HasWinget;
+  Result := FileExists('C:\VirtualDisplayDriver\vdd_settings.xml');
 end;
 
 function ShouldOfferAdbInstall: Boolean;
@@ -172,57 +163,64 @@ begin
   if Pos(LowerDir, LowerPath) > 0 then
     Exit;
 
-  if (Length(PathVal) > 0) and (PathVal[Length(PathVal)] <> ';') then
+  if PathVal <> '' then
     PathVal := PathVal + ';';
   PathVal := PathVal + Dir;
-  RegWriteExpandStringValue(RootKey, SubKey, 'Path', PathVal);
+  if RegWriteStringValue(RootKey, InstallerKey, PathValueName, Dir) then
+    if not RegWriteExpandStringValue(RootKey, SubKey, 'Path', PathVal) then
+      RegDeleteValue(RootKey, InstallerKey, PathValueName);
 end;
 
-procedure RemoveFromPath(Dir: String);
+procedure RemoveFromPath;
 var
   RootKey: Integer;
-  SubKey, PathVal, LowerDir, NewPath, Entry: String;
+  SubKey, PathVal, Dir: String;
   P: Integer;
 begin
   GetEnvRootAndKey(RootKey, SubKey);
-  if not RegQueryStringValue(RootKey, SubKey, 'Path', PathVal) then
+  if not RegQueryStringValue(RootKey, InstallerKey, PathValueName, Dir) then
     Exit;
 
-  LowerDir := Lowercase(Dir);
-  NewPath := '';
-  while Length(PathVal) > 0 do
+  if RegQueryStringValue(RootKey, SubKey, 'Path', PathVal) then
   begin
-    P := Pos(';', PathVal);
+    PathVal := ';' + PathVal + ';';
+    P := Pos(';' + Lowercase(Dir) + ';', Lowercase(PathVal));
     if P > 0 then
     begin
-      Entry := Copy(PathVal, 1, P - 1);
-      Delete(PathVal, 1, P);
-    end
-    else
-    begin
-      Entry := PathVal;
-      PathVal := '';
-    end;
-
-    if (Entry <> '') and (Lowercase(Entry) <> LowerDir) then
-    begin
-      if NewPath <> '' then
-        NewPath := NewPath + ';';
-      NewPath := NewPath + Entry;
+      Delete(PathVal, P, Length(Dir) + 1);
+      Delete(PathVal, Length(PathVal), 1);
+      Delete(PathVal, 1, 1);
+      if not RegWriteExpandStringValue(RootKey, SubKey, 'Path', PathVal) then
+        Exit;
     end;
   end;
-
-  RegWriteExpandStringValue(RootKey, SubKey, 'Path', NewPath);
+  RegDeleteValue(RootKey, InstallerKey, PathValueName);
+  RegDeleteKeyIfEmpty(RootKey, InstallerKey);
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
 begin
-  if (CurStep = ssPostInstall) and WizardIsTaskSelected('addtopath') then
+  if CurStep <> ssPostInstall then
+    Exit;
+
+  if WizardIsTaskSelected('addtopath') then
     AddToPath(ExpandConstant('{app}'));
+
+  if WizardIsTaskSelected('vddresolutions') then
+  begin
+    if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+      '-NoProfile -ExecutionPolicy Bypass -File "' +
+      ExpandConstant('{tmp}\add-vdd-resolutions.ps1') + '"', '', SW_HIDE,
+      ewWaitUntilTerminated, ResultCode) or (ResultCode <> 0) then
+      SuppressibleMsgBox('Setup could not add display resolutions. Configure them in Virtual Driver Control and reload the driver.',
+        mbError, MB_OK, IDOK);
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
-    RemoveFromPath(ExpandConstant('{app}'));
+    RemoveFromPath;
 end;

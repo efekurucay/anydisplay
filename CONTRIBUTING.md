@@ -34,7 +34,7 @@ Include:
 2. Write the release notes to a file, then run `scripts/release.sh vX.Y.Z NOTES.md`. It needs the
    Android release key configured through Gradle properties (`anydisplay.storeFile`,
    `anydisplay.storePassword`, `anydisplay.keyAlias`, `anydisplay.keyPassword`).
-3. The release workflow adds the Windows zip a few minutes later.
+3. The release workflow adds the Windows installer and portable zip a few minutes later.
 
 ## Security issues
 

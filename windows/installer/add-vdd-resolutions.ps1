@@ -4,19 +4,12 @@ param(
     [string]$SettingsPath = "C:\VirtualDisplayDriver\vdd_settings.xml"
 )
 
-if (-not (Test-Path -LiteralPath $SettingsPath)) {
-    exit 0
-}
+$ErrorActionPreference = 'Stop'
 
-try {
-    [xml]$doc = Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8
-} catch {
-    exit 0
-}
-
-$resNode = $doc.vdd_settings.resolutions
+[xml]$doc = Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8
+$resNode = $doc.SelectSingleNode('/vdd_settings/resolutions')
 if ($null -eq $resNode) {
-    exit 0
+    throw "The driver configuration has no resolutions section: $SettingsPath"
 }
 
 # Common Android tablet & phone native resolutions (width, height) in both orientations.
@@ -64,10 +57,18 @@ if ($changed) {
     $settings.Indent = $true
     $settings.IndentChars = "    "
     $settings.Encoding = New-Object System.Text.UTF8Encoding($false)
-    $writer = [System.Xml.XmlWriter]::Create($SettingsPath, $settings)
+    $tempPath = "$SettingsPath.$([Guid]::NewGuid()).tmp"
     try {
-        $doc.Save($writer)
+        $writer = [System.Xml.XmlWriter]::Create($tempPath, $settings)
+        try {
+            $doc.Save($writer)
+        } finally {
+            $writer.Dispose()
+        }
+        [System.IO.File]::Replace($tempPath, $SettingsPath, [NullString]::Value)
     } finally {
-        $writer.Dispose()
+        if (Test-Path -LiteralPath $tempPath) {
+            Remove-Item -LiteralPath $tempPath
+        }
     }
 }

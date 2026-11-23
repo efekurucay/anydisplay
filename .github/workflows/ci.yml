@@ -50,6 +50,46 @@ jobs:
           $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
           if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
           & $iscc installer/anydisplay.iss
+      - name: Test installer PATH cleanup
+        shell: pwsh
+        run: |
+          $setup = Resolve-Path installer/out/AnyDisplay-windows-x64-setup.exe
+          $installDir = Join-Path $env:RUNNER_TEMP 'AnyDisplay Install'
+          $environmentKey = 'HKCU:\Environment'
+          $basePath = 'C:\other;C:\tools;'
+          foreach ($test in @(
+            @{ Tasks = 'addtopath'; Before = $basePath; Installed = "$basePath;$installDir" },
+            @{ Tasks = 'addtopath'; Before = "C:\other;$installDir;C:\tools;"; Installed = "C:\other;$installDir;C:\tools;" },
+            @{ Tasks = 'desktopicon'; Before = "C:\other;$installDir;C:\tools;"; Installed = "C:\other;$installDir;C:\tools;" }
+          )) {
+            Set-ItemProperty -Path $environmentKey -Name Path -Value $test.Before
+            $install = Start-Process $setup -ArgumentList @(
+              '/VERYSILENT', '/CURRENTUSER', '/NORESTART', ('/DIR="' + $installDir + '"'), "/TASKS=$($test.Tasks)"
+            ) -Wait -PassThru
+            if ($install.ExitCode -ne 0) { throw "Installer exited with code $($install.ExitCode)" }
+            if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Installed) {
+              throw "Unexpected PATH after installing with tasks $($test.Tasks)"
+            }
+            $uninstall = Start-Process (Join-Path $installDir 'unins000.exe') -ArgumentList '/VERYSILENT', '/NORESTART' -Wait -PassThru
+            if ($uninstall.ExitCode -ne 0) { throw "Uninstaller exited with code $($uninstall.ExitCode)" }
+            if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Before) {
+              throw "Uninstall did not restore the original PATH for tasks $($test.Tasks)"
+            }
+          }
+      - name: Test display resolution configuration
+        shell: powershell
+        run: |
+          $settings = Join-Path $env:RUNNER_TEMP 'vdd_settings.xml'
+          '<vdd_settings><resolutions><resolution><width>2000</width><height>1200</height><refresh_rate>60</refresh_rate></resolution></resolutions></vdd_settings>' |
+            Set-Content -LiteralPath $settings -Encoding UTF8
+          & .\installer\add-vdd-resolutions.ps1 -SettingsPath $settings
+          $hash = (Get-FileHash $settings).Hash
+          [xml]$config = Get-Content -LiteralPath $settings -Raw
+          if ($config.SelectNodes('/vdd_settings/resolutions/resolution[refresh_rate=60]').Count -ne 16) {
+            throw 'Expected 16 display resolutions at 60 Hz'
+          }
+          & .\installer\add-vdd-resolutions.ps1 -SettingsPath $settings
+          if ((Get-FileHash $settings).Hash -ne $hash) { throw 'Applying resolutions twice changed the file' }
       - uses: actions/upload-artifact@v4
         with:
           name: anydisplay-win

@@ -19,7 +19,10 @@ Open the Android app and leave it on screen while connecting.
 
 ## Windows: Windows 10 (1809) or Windows 11
 
-Unzip the download. Open a terminal in the extracted folder:
+Run the Windows installer and open **AnyDisplay** from the Start menu. With the portable ZIP,
+extract the files and open `anydisplay-gui.exe`.
+
+To connect from the command line, open a terminal in the folder containing the executable:
 
 ```powershell
 .\anydisplay-win.exe list
@@ -47,7 +50,8 @@ It mirrors an existing monitor unless you install the optional
    the device, and accept the **Allow USB debugging?** prompt for this computer.
 4. Run `adb devices -l`. Your device must say `device`, not `unauthorized` or `offline`.
 5. Keep AnyDisplay open on Android. The Mac menu bar app connects authorized USB devices
-   automatically by default; on Windows run the USB command above.
+   automatically by default. On Windows, select the device under **USB** in AnyDisplay or run
+   the USB command above.
 
 For a device listed as `(no serial number)`, connect only one USB Android device at a time.
 This case is supported on both hosts starting with v0.1.1. USB uses the existing ADB
@@ -56,7 +60,8 @@ computer authorization; it does not show the Wi-Fi pairing code.
 ## Wi-Fi
 
 Put both devices on the same local network and keep AnyDisplay open on Android. On Mac, select
-it under **Wi-Fi** in the menu. On Windows, use `list` to discover it, then `connect <IP>`.
+it under **Wi-Fi** in the menu. On Windows, select it under **Wi-Fi** in AnyDisplay or use
+`list` and `connect <IP>` from the command line.
 Compare the six-digit code on both screens and accept only if they match.
 Wi-Fi sessions are encrypted after pairing.
 
