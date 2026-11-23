@@ -54,17 +54,21 @@ jobs:
         shell: pwsh
         timeout-minutes: 4
         run: |
-          function Invoke-Setup([string]$FilePath, [string[]]$Arguments) {
+          function Invoke-Setup([string]$FilePath, [string[]]$Arguments, [switch]$WaitForChildren) {
             $log = Join-Path $env:RUNNER_TEMP 'anydisplay-setup-test.log'
             if (Test-Path $log) { Remove-Item $log }
             $process = Start-Process $FilePath -ArgumentList (
               $Arguments + @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"'))
-            ) -PassThru
+            ) -Wait:$WaitForChildren -PassThru
             if (-not $process.WaitForExit(30000)) {
               if (Test-Path $log) { Get-Content $log }
               throw "$FilePath did not finish within 30 seconds"
             }
-            if (Test-Path $log) { Get-Content $log }
+            if (Test-Path $log) {
+              $output = Get-Content $log
+              $output | Write-Host
+              if ($output -match 'Internal error:') { throw "Internal error in $FilePath" }
+            }
             if ($process.ExitCode -ne 0) { throw "$FilePath exited with code $($process.ExitCode)" }
           }
 
@@ -82,7 +86,7 @@ jobs:
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Installed) {
               throw "Unexpected PATH after installing with tasks $($test.Tasks)"
             }
-            Invoke-Setup (Join-Path $installDir 'unins000.exe') @()
+            Invoke-Setup (Join-Path $installDir 'unins000.exe') @() -WaitForChildren
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Before) {
               throw "Uninstall did not restore the original PATH for tasks $($test.Tasks)"
             }

@@ -98,7 +98,7 @@ begin
     FileExists(ExpandConstant('{localappdata}\Android\Sdk\platform-tools\adb.exe')) or
     FileExists(ExpandConstant('{localappdata}\Microsoft\WinGet\Links\adb.exe')) or
     FileExists('C:\ProgramData\chocolatey\bin\adb.exe') or
-    FileExists(ExpandConstant('{userprofile}\scoop\shims\adb.exe')) or
+    FileExists(ExpandConstant('{%USERPROFILE}\scoop\shims\adb.exe')) or
     FileExists('C:\platform-tools\adb.exe');
   if Result then
     Exit;
