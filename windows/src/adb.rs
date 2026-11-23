@@ -34,8 +34,16 @@ impl Adb {
         }
         if cfg!(windows) {
             if let Some(local) = std::env::var_os("LOCALAPPDATA") {
-                candidates.push(PathBuf::from(local).join(r"Android\Sdk\platform-tools\adb.exe"));
+                candidates.push(PathBuf::from(&local).join(r"Android\Sdk\platform-tools\adb.exe"));
+                candidates.push(PathBuf::from(local).join(r"Microsoft\WinGet\Links\adb.exe"));
             }
+            if let Some(program_data) = std::env::var_os("ProgramData") {
+                candidates.push(PathBuf::from(program_data).join(r"chocolatey\bin\adb.exe"));
+            }
+            if let Some(profile) = std::env::var_os("USERPROFILE") {
+                candidates.push(PathBuf::from(profile).join(r"scoop\shims\adb.exe"));
+            }
+            candidates.push(PathBuf::from(r"C:\platform-tools\adb.exe"));
         } else if let Some(home) = std::env::var_os("HOME") {
             candidates.push(PathBuf::from(&home).join("Library/Android/sdk/platform-tools/adb"));
             candidates.push(PathBuf::from(home).join("Android/Sdk/platform-tools/adb"));

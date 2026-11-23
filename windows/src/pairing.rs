@@ -113,6 +113,16 @@ impl PairingStore {
         self.save()
     }
 
+    pub fn forget_hex(&mut self, device_id_hex: &str) -> std::io::Result<()> {
+        self.file.devices.remove(device_id_hex);
+        self.save()
+    }
+
+    pub fn forget_all(&mut self) -> std::io::Result<()> {
+        self.file.devices.clear();
+        self.save()
+    }
+
     fn save(&self) -> std::io::Result<()> {
         if let Some(dir) = self.path.parent() {
             std::fs::create_dir_all(dir)?;

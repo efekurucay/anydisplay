@@ -14,6 +14,10 @@ path = "src/lib.rs"
 name = "anydisplay-win"
 path = "src/main.rs"
 
+[[bin]]
+name = "anydisplay-gui"
+path = "src/gui.rs"
+
 [dependencies]
 anyhow = "1"
 aes-gcm = "0.10"
@@ -26,6 +30,10 @@ p256 = { version = "0.13", default-features = false, features = ["ecdh", "std"] 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+eframe = { version = "0.31", default-features = false, features = ["default_fonts", "glow"] }
+tray-icon = "0.20"
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.62"
@@ -52,6 +60,7 @@ features = [
     "Win32_UI_HiDpi",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_Input_Pointer",
+    "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
 ]
 
