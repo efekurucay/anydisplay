@@ -4,7 +4,9 @@
 
 #[cfg(not(windows))]
 fn main() {
-    eprintln!("anydisplay-gui is only supported on Windows; use `anydisplay-win` on other platforms.");
+    eprintln!(
+        "anydisplay-gui is only supported on Windows; use `anydisplay-win` on other platforms."
+    );
     std::process::exit(1);
 }
 
@@ -31,7 +33,9 @@ mod app {
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
     use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem};
-    use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
+    use tray_icon::{
+        Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
+    };
 
     const SETUP_URL: &str = "https://efekurucay.com/anydisplay/#setup";
 
@@ -60,7 +64,10 @@ mod app {
             } else {
                 ""
             };
-            format!("#{}: {} ({}×{}){}", self.index, name, self.width, self.height, tag)
+            format!(
+                "#{}: {} ({}×{}){}",
+                self.index, name, self.width, self.height, tag
+            )
         }
     }
 
@@ -133,6 +140,7 @@ mod app {
         window_visible: bool,
         quitting: bool,
         last_auto_connect_check: Instant,
+        last_monitor_refresh: Instant,
     }
 
     pub fn run() -> eframe::Result<()> {
@@ -180,7 +188,13 @@ mod app {
             // Create system tray icon on UI thread
             let hwnd = Arc::new(AtomicIsize::new(0));
             let (tray, show_id, quit_id) = build_tray_icon();
-            spawn_tray_listener(tx.clone(), cc.egui_ctx.clone(), hwnd.clone(), show_id, quit_id);
+            spawn_tray_listener(
+                tx.clone(),
+                cc.egui_ctx.clone(),
+                hwnd.clone(),
+                show_id,
+                quit_id,
+            );
 
             let monitors = query_monitors();
             let paired_devices = load_paired_devices();
@@ -218,6 +232,7 @@ mod app {
                 window_visible: true,
                 quitting: false,
                 last_auto_connect_check: Instant::now() - Duration::from_secs(5),
+                last_monitor_refresh: Instant::now(),
             }
         }
 
@@ -266,11 +281,7 @@ mod app {
                     }
                     UiEvent::SessionEnded { key, error } => {
                         self.sessions.remove(&key);
-                        if self
-                            .pairing_prompt
-                            .as_ref()
-                            .is_some_and(|p| p.key == key)
-                        {
+                        if self.pairing_prompt.as_ref().is_some_and(|p| p.key == key) {
                             self.pairing_prompt = None;
                         }
                         if let Some(serial) = key.strip_prefix("usb:") {
@@ -399,7 +410,10 @@ mod app {
             self.usb_retry_after.remove(&device.serial);
             self.last_error = None;
 
-            let title = device.model.clone().unwrap_or_else(|| device.serial.clone());
+            let title = device
+                .model
+                .clone()
+                .unwrap_or_else(|| device.serial.clone());
             let handle = SessionHandle::default();
             self.sessions.insert(
                 key.clone(),
@@ -502,10 +516,8 @@ mod app {
                 active.handle.stop(bye::USER);
             }
             if let Some(serial) = key.strip_prefix("usb:") {
-                self.usb_retry_after.insert(
-                    serial.to_string(),
-                    Instant::now() + Duration::from_secs(15),
-                );
+                self.usb_retry_after
+                    .insert(serial.to_string(), Instant::now() + Duration::from_secs(15));
             }
         }
     }
@@ -525,8 +537,12 @@ mod app {
                 return;
             }
 
-            // Periodic repaint while visible to keep discovery/logs fresh.
+            // Periodic repaint and monitor refresh while visible.
             if self.window_visible {
+                if self.last_monitor_refresh.elapsed() >= Duration::from_secs(3) {
+                    self.monitors = query_monitors();
+                    self.last_monitor_refresh = Instant::now();
+                }
                 ctx.request_repaint_after(Duration::from_millis(500));
             }
 
@@ -680,10 +696,8 @@ mod app {
                         ui.horizontal(|ui| {
                             if ui
                                 .add(
-                                    egui::Button::new(
-                                        egui::RichText::new("Codes Match").strong(),
-                                    )
-                                    .fill(egui::Color32::from_rgb(37, 99, 235)),
+                                    egui::Button::new(egui::RichText::new("Codes Match").strong())
+                                        .fill(egui::Color32::from_rgb(37, 99, 235)),
                                 )
                                 .clicked()
                             {
@@ -747,7 +761,10 @@ mod app {
 
             section_card(ui, "USB (ADB)", |ui| {
                 if ui
-                    .checkbox(&mut self.auto_connect_usb, "Connect USB devices automatically")
+                    .checkbox(
+                        &mut self.auto_connect_usb,
+                        "Connect USB devices automatically",
+                    )
                     .changed()
                     && self.auto_connect_usb
                 {
@@ -860,11 +877,7 @@ mod app {
                             .device_id
                             .as_deref()
                             .is_some_and(|id| self.paired_devices.contains_key(id));
-                        let addr_str = d
-                            .addrs
-                            .first()
-                            .map(|a| a.to_string())
-                            .unwrap_or_default();
+                        let addr_str = d.addrs.first().map(|a| a.to_string()).unwrap_or_default();
 
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
@@ -917,8 +930,7 @@ mod app {
                             .hint_text("Tablet IP, e.g. 192.168.1.20")
                             .desired_width(ui.available_width() - 80.0),
                     );
-                    let enter =
-                        resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
                     let clicked = ui
                         .add_enabled(
                             !self.manual_address.trim().is_empty(),
@@ -1165,7 +1177,11 @@ mod app {
                 "{width}×{height} @ {refresh_hz} Hz · {}{}{} ",
                 codec.name().to_uppercase(),
                 if *hardware_encoder { " (HW)" } else { " (SW)" },
-                if *mirroring { " · Mirroring" } else { " · Extended" },
+                if *mirroring {
+                    " · Mirroring"
+                } else {
+                    " · Extended"
+                },
             )
             .trim_end()
             .to_string(),
@@ -1235,16 +1251,14 @@ mod app {
         let _ = menu.append(&quit_item);
 
         let (rgba, w, h) = make_icon_rgba(false);
-        let tray = Icon::from_rgba(rgba, w, h)
-            .ok()
-            .and_then(|icon| {
-                TrayIconBuilder::new()
-                    .with_menu(Box::new(menu))
-                    .with_tooltip("AnyDisplay")
-                    .with_icon(icon)
-                    .build()
-                    .ok()
-            });
+        let tray = Icon::from_rgba(rgba, w, h).ok().and_then(|icon| {
+            TrayIconBuilder::new()
+                .with_menu(Box::new(menu))
+                .with_tooltip("AnyDisplay")
+                .with_icon(icon)
+                .build()
+                .ok()
+        });
         (tray, show_id, quit_id)
     }
 

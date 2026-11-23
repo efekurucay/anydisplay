@@ -93,10 +93,7 @@ impl WifiMonitor {
     }
 
     pub fn devices(&self) -> Vec<NetworkDevice> {
-        self.devices
-            .lock()
-            .map(|g| g.clone())
-            .unwrap_or_default()
+        self.devices.lock().map(|g| g.clone()).unwrap_or_default()
     }
 }
 

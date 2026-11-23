@@ -45,8 +45,12 @@ impl PairingStore {
                 .map(|h| PathBuf::from(h).join(".config"))
                 .unwrap_or_else(|| PathBuf::from("."))
         };
-        base.join(if cfg!(windows) { "AnyDisplay" } else { "anydisplay" })
-            .join("host.json")
+        base.join(if cfg!(windows) {
+            "AnyDisplay"
+        } else {
+            "anydisplay"
+        })
+        .join("host.json")
     }
 
     /// Loads the store, creating a fresh host identity when the file is missing or unreadable.
