@@ -24,7 +24,7 @@ jobs:
         run: |
           $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
           New-Item -ItemType Directory $name | Out-Null
-          Copy-Item windows/target/release/anydisplay-win.exe $name/
+          Copy-Item windows/target/release/anydisplay-win.exe, windows/target/release/anydisplay-gui.exe $name/
           Copy-Item windows/README.md, LICENSE $name/
           Compress-Archive -Path $name -DestinationPath "$name.zip"
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"

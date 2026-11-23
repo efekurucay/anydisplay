@@ -234,8 +234,8 @@ mod app {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_title("AnyDisplay")
-                .with_inner_size([440.0, 740.0])
-                .with_min_inner_size([390.0, 540.0])
+                .with_inner_size([480.0, 740.0])
+                .with_min_inner_size([430.0, 540.0])
                 .with_icon(viewport_icon),
             ..Default::default()
         };
@@ -746,35 +746,38 @@ mod app {
                         .inner_margin(Margin::symmetric(16, 14)),
                 )
                 .show(ctx, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        if let Some(err) = self.last_error.clone() {
-                            error_banner(ui, &err, p, || {
-                                self.last_error = None;
-                            });
-                            ui.add_space(12.0);
-                        }
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            if let Some(err) = self.last_error.clone() {
+                                error_banner(ui, &err, p, || {
+                                    self.last_error = None;
+                                });
+                                ui.add_space(12.0);
+                            }
 
-                        // 1. Connected sessions (signature lime highlight card)
-                        if !self.sessions.is_empty() {
-                            self.render_connected_section(ui, p);
+                            // 1. Connected sessions (signature lime highlight card)
+                            if !self.sessions.is_empty() {
+                                self.render_connected_section(ui, p);
+                                ui.add_space(10.0);
+                            }
+
+                            // 2. USB devices
+                            self.render_usb_section(ui, p);
                             ui.add_space(10.0);
-                        }
 
-                        // 2. USB devices
-                        self.render_usb_section(ui, p);
-                        ui.add_space(10.0);
+                            // 3. Wi-Fi devices + manual IP
+                            self.render_wifi_section(ui, p);
+                            ui.add_space(10.0);
 
-                        // 3. Wi-Fi devices + manual IP
-                        self.render_wifi_section(ui, p);
-                        ui.add_space(10.0);
+                            // 4. Display & Stream settings
+                            self.render_settings_section(ui, p);
+                            ui.add_space(10.0);
 
-                        // 4. Display & Stream settings
-                        self.render_settings_section(ui, p);
-                        ui.add_space(10.0);
-
-                        // 5. Logs
-                        self.render_logs_section(ui, p);
-                    });
+                            // 5. Logs
+                            self.render_logs_section(ui, p);
+                        });
                 });
         }
     }
@@ -988,6 +991,32 @@ mod app {
                 .collect();
 
             section_card(ui, "WI-FI", p, |ui| {
+                // Manual IP input stays anchored at the top so mDNS updates never shift it.
+                ui.horizontal(|ui| {
+                    let input_w = (ui.available_width() - 126.0).max(120.0);
+                    let resp = ui.add(
+                        egui::TextEdit::singleline(&mut self.manual_address)
+                            .hint_text("Tablet IP, e.g. 192.168.1.20")
+                            .margin(Margin::symmetric(8, 6))
+                            .desired_width(input_w),
+                    );
+                    let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    let has_input = !self.manual_address.trim().is_empty();
+                    let clicked = ui
+                        .add_enabled_ui(has_input, |ui| outline_button_sm(ui, "+ Connection", p))
+                        .inner
+                        .clicked();
+                    if (enter || clicked) && has_input {
+                        let target = self.manual_address.trim().to_string();
+                        let key = format!("ip:{target}");
+                        self.connect_network(key, target.clone(), target);
+                    }
+                });
+
+                ui.add_space(8.0);
+                hairline_divider(ui, p);
+                ui.add_space(8.0);
+
                 if let Some(err) = &self.wifi_error {
                     ui.label(
                         RichText::new(format!("mDNS unavailable: {err}"))
@@ -1041,8 +1070,8 @@ mod app {
                                         to_connect = Some((key, d.name.clone(), addr_str));
                                     }
                                     if let Some(id) = paired_id {
-                                        if outline_button_sm(ui, "Forget", p)
-                                            .on_hover_text("Remove saved Wi-Fi pairing")
+                                        if trash_icon_button(ui, p)
+                                            .on_hover_text("Forget saved Wi-Fi pairing")
                                             .clicked()
                                         {
                                             to_forget = Some(id);
@@ -1065,8 +1094,8 @@ mod app {
                             ui.with_layout(
                                 egui::Layout::right_to_left(egui::Align::Center),
                                 |ui| {
-                                    if outline_button_sm(ui, "Forget", p)
-                                        .on_hover_text("Remove saved Wi-Fi pairing")
+                                    if trash_icon_button(ui, p)
+                                        .on_hover_text("Forget saved Wi-Fi pairing")
                                         .clicked()
                                     {
                                         to_forget = Some(id.clone());
@@ -1077,29 +1106,6 @@ mod app {
                         ui.add_space(4.0);
                     }
                 }
-
-                ui.add_space(4.0);
-                hairline_divider(ui, p);
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    let resp = ui.add(
-                        egui::TextEdit::singleline(&mut self.manual_address)
-                            .hint_text("Tablet IP, e.g. 192.168.1.20")
-                            .margin(Margin::symmetric(8, 6))
-                            .desired_width(ui.available_width() - 84.0),
-                    );
-                    let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-                    let has_input = !self.manual_address.trim().is_empty();
-                    let clicked = ui
-                        .add_enabled_ui(has_input, |ui| accent_button(ui, "Connect", p))
-                        .inner
-                        .clicked();
-                    if (enter || clicked) && has_input {
-                        let target = self.manual_address.trim().to_string();
-                        let key = format!("ip:{target}");
-                        self.connect_network(key, target.clone(), target);
-                    }
-                });
             });
 
             if let Some((key, name, addr)) = to_connect {
@@ -1157,7 +1163,7 @@ mod app {
                             }
                         });
 
-                    if outline_button_sm(ui, "↻", p)
+                    if refresh_icon_button(ui, p)
                         .on_hover_text("Refresh monitors")
                         .clicked()
                     {
@@ -1753,16 +1759,22 @@ mod app {
         visuals.widgets.open.corner_radius = CornerRadius::same(5);
 
         ctx.set_visuals(visuals);
+        ctx.style_mut(|s| {
+            s.spacing.button_padding = egui::vec2(12.0, 5.0);
+        });
     }
 
     fn section_card(ui: &mut egui::Ui, title: &str, p: Palette, body: impl FnOnce(&mut egui::Ui)) {
+        let outer_w = ui.available_width();
         egui::Frame::NONE
             .fill(p.card_bg)
             .stroke(Stroke::new(1.0, p.hairline))
             .corner_radius(CornerRadius::same(6))
-            .inner_margin(Margin::same(12))
+            .inner_margin(Margin::same(14))
             .show(ui, |ui| {
-                ui.set_width(ui.available_width());
+                let inner_w = (outer_w - 28.0).max(200.0);
+                ui.set_min_width(inner_w);
+                ui.set_max_width(inner_w);
                 ui.label(
                     RichText::new(title)
                         .family(display_font())
@@ -1780,13 +1792,16 @@ mod app {
         p: Palette,
         body: impl FnOnce(&mut egui::Ui),
     ) {
+        let outer_w = ui.available_width();
         egui::Frame::NONE
             .fill(p.card_highlight)
             .stroke(Stroke::new(1.0, p.card_highlight_border))
             .corner_radius(CornerRadius::same(6))
-            .inner_margin(Margin::same(12))
+            .inner_margin(Margin::same(14))
             .show(ui, |ui| {
-                ui.set_width(ui.available_width());
+                let inner_w = (outer_w - 28.0).max(200.0);
+                ui.set_min_width(inner_w);
+                ui.set_max_width(inner_w);
                 ui.label(
                     RichText::new(title)
                         .family(display_font())
@@ -1798,9 +1813,13 @@ mod app {
             });
     }
 
-    /// Vector Sun (when dark) / Moon (when light) theme toggle button.
-    fn theme_icon_button(ui: &mut egui::Ui, dark_mode: bool, p: Palette) -> egui::Response {
-        let size = egui::vec2(28.0, 26.0);
+    /// Square outline icon button (`28×28`, matching standard button height).
+    fn icon_button_shell(
+        ui: &mut egui::Ui,
+        p: Palette,
+        draw: impl FnOnce(&egui::Painter, egui::Pos2, Color32, Color32),
+    ) -> egui::Response {
+        let size = egui::vec2(28.0, 28.0);
         let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
         if resp.hovered() {
             ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
@@ -1816,10 +1835,15 @@ mod app {
                 Stroke::new(1.0, border),
                 egui::StrokeKind::Inside,
             );
-            let c = rect.center();
-            let fg = p.ink;
+            draw(painter, rect.center(), p.ink, bg);
+        }
+        resp
+    }
+
+    /// Vector Sun (when dark) / Moon (when light) theme toggle button.
+    fn theme_icon_button(ui: &mut egui::Ui, dark_mode: bool, p: Palette) -> egui::Response {
+        icon_button_shell(ui, p, |painter, c, fg, bg| {
             if dark_mode {
-                // Sun icon (switch to light)
                 painter.circle_stroke(c, 4.0, Stroke::new(1.5, fg));
                 for i in 0..8 {
                     let angle = (i as f32) * std::f32::consts::FRAC_PI_4;
@@ -1829,12 +1853,80 @@ mod app {
                     painter.line_segment([p0, p1], Stroke::new(1.4, fg));
                 }
             } else {
-                // Crescent moon icon (switch to dark)
                 painter.circle_filled(c, 6.0, fg);
                 painter.circle_filled(egui::pos2(c.x + 2.6, c.y - 2.2), 5.2, bg);
             }
-        }
-        resp
+        })
+    }
+
+    /// Lucide-style RefreshCw vector icon button.
+    fn refresh_icon_button(ui: &mut egui::Ui, p: Palette) -> egui::Response {
+        icon_button_shell(ui, p, |painter, c, fg, _| {
+            let r = 5.5;
+            let steps = 16;
+            let start = -0.35_f32;
+            let end = std::f32::consts::TAU - 1.15;
+            let pts: Vec<egui::Pos2> = (0..=steps)
+                .map(|i| {
+                    let t = start + (end - start) * (i as f32 / steps as f32);
+                    egui::pos2(c.x + r * t.cos(), c.y + r * t.sin())
+                })
+                .collect();
+            painter.add(egui::Shape::line(pts, Stroke::new(1.5, fg)));
+            // Arrowhead at top-right
+            let tip = egui::pos2(c.x + r * start.cos(), c.y + r * start.sin());
+            painter.line_segment(
+                [tip, egui::pos2(tip.x - 3.5, tip.y - 0.5)],
+                Stroke::new(1.5, fg),
+            );
+            painter.line_segment(
+                [tip, egui::pos2(tip.x + 0.5, tip.y - 3.5)],
+                Stroke::new(1.5, fg),
+            );
+        })
+    }
+
+    /// Lucide-style Trash2 vector icon button (for forgetting saved Wi-Fi pairings).
+    fn trash_icon_button(ui: &mut egui::Ui, p: Palette) -> egui::Response {
+        icon_button_shell(ui, p, |painter, c, fg, _| {
+            let st = Stroke::new(1.4, fg);
+            // Lid + handle
+            painter.line_segment(
+                [
+                    egui::pos2(c.x - 5.5, c.y - 3.5),
+                    egui::pos2(c.x + 5.5, c.y - 3.5),
+                ],
+                st,
+            );
+            painter.line_segment(
+                [
+                    egui::pos2(c.x - 2.0, c.y - 5.5),
+                    egui::pos2(c.x + 2.0, c.y - 5.5),
+                ],
+                st,
+            );
+            // Bin body
+            let body = egui::Rect::from_min_max(
+                egui::pos2(c.x - 4.2, c.y - 3.5),
+                egui::pos2(c.x + 4.2, c.y + 5.5),
+            );
+            painter.rect_stroke(body, CornerRadius::same(1), st, egui::StrokeKind::Middle);
+            // Inner lines
+            painter.line_segment(
+                [
+                    egui::pos2(c.x - 1.5, c.y - 1.0),
+                    egui::pos2(c.x - 1.5, c.y + 3.2),
+                ],
+                st,
+            );
+            painter.line_segment(
+                [
+                    egui::pos2(c.x + 1.5, c.y - 1.0),
+                    egui::pos2(c.x + 1.5, c.y + 3.2),
+                ],
+                st,
+            );
+        })
     }
 
     fn hairline_divider(ui: &mut egui::Ui, p: Palette) {
@@ -1854,27 +1946,27 @@ mod app {
             .fill(p.accent)
             .stroke(Stroke::NONE)
             .corner_radius(CornerRadius::same(5))
-            .min_size(egui::vec2(72.0, 28.0)),
+            .min_size(egui::vec2(76.0, 28.0)),
         )
     }
 
     fn primary_button_sm(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
         ui.add(
-            egui::Button::new(RichText::new(text).size(12.0).strong().color(p.on_primary))
+            egui::Button::new(RichText::new(text).size(12.5).strong().color(p.on_primary))
                 .fill(p.primary)
                 .stroke(Stroke::NONE)
                 .corner_radius(CornerRadius::same(5))
-                .min_size(egui::vec2(0.0, 26.0)),
+                .min_size(egui::vec2(0.0, 28.0)),
         )
     }
 
     fn outline_button_sm(ui: &mut egui::Ui, text: &str, p: Palette) -> egui::Response {
         ui.add(
-            egui::Button::new(RichText::new(text).size(12.0).color(p.ink))
+            egui::Button::new(RichText::new(text).size(12.5).color(p.ink))
                 .fill(p.canvas)
                 .stroke(Stroke::new(1.0, p.hairline))
                 .corner_radius(CornerRadius::same(5))
-                .min_size(egui::vec2(0.0, 26.0)),
+                .min_size(egui::vec2(0.0, 28.0)),
         )
     }
 
