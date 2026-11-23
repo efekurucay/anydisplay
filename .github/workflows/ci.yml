@@ -52,7 +52,22 @@ jobs:
           & $iscc installer/anydisplay.iss
       - name: Test installer PATH cleanup
         shell: pwsh
+        timeout-minutes: 4
         run: |
+          function Invoke-Setup([string]$FilePath, [string[]]$Arguments) {
+            $log = Join-Path $env:RUNNER_TEMP 'anydisplay-setup-test.log'
+            if (Test-Path $log) { Remove-Item $log }
+            $process = Start-Process $FilePath -ArgumentList (
+              $Arguments + @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"'))
+            ) -PassThru
+            if (-not $process.WaitForExit(30000)) {
+              if (Test-Path $log) { Get-Content $log }
+              throw "$FilePath did not finish within 30 seconds"
+            }
+            if (Test-Path $log) { Get-Content $log }
+            if ($process.ExitCode -ne 0) { throw "$FilePath exited with code $($process.ExitCode)" }
+          }
+
           $setup = Resolve-Path installer/out/AnyDisplay-windows-x64-setup.exe
           $installDir = Join-Path $env:RUNNER_TEMP 'AnyDisplay Install'
           $environmentKey = 'HKCU:\Environment'
@@ -63,15 +78,11 @@ jobs:
             @{ Tasks = 'desktopicon'; Before = "C:\other;$installDir;C:\tools;"; Installed = "C:\other;$installDir;C:\tools;" }
           )) {
             Set-ItemProperty -Path $environmentKey -Name Path -Value $test.Before
-            $install = Start-Process $setup -ArgumentList @(
-              '/VERYSILENT', '/CURRENTUSER', '/NORESTART', ('/DIR="' + $installDir + '"'), "/TASKS=$($test.Tasks)"
-            ) -Wait -PassThru
-            if ($install.ExitCode -ne 0) { throw "Installer exited with code $($install.ExitCode)" }
+            Invoke-Setup $setup @('/SP-', '/CURRENTUSER', ('/DIR="' + $installDir + '"'), "/TASKS=$($test.Tasks)")
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Installed) {
               throw "Unexpected PATH after installing with tasks $($test.Tasks)"
             }
-            $uninstall = Start-Process (Join-Path $installDir 'unins000.exe') -ArgumentList '/VERYSILENT', '/NORESTART' -Wait -PassThru
-            if ($uninstall.ExitCode -ne 0) { throw "Uninstaller exited with code $($uninstall.ExitCode)" }
+            Invoke-Setup (Join-Path $installDir 'unins000.exe') @()
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Before) {
               throw "Uninstall did not restore the original PATH for tasks $($test.Tasks)"
             }
