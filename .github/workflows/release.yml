@@ -22,7 +22,9 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
+          $tag = "${{ github.event.release.tag_name }}"
+          $ver = $tag.TrimStart('v')
+          $name = "AnyDisplay-$tag-windows-x64"
           New-Item -ItemType Directory $name | Out-Null
           Copy-Item windows/target/release/anydisplay-win.exe, windows/target/release/anydisplay-gui.exe $name/
           Copy-Item windows/README.md, LICENSE $name/
@@ -30,10 +32,24 @@ jobs:
           (Get-FileHash "$name.zip" -Algorithm SHA256).Hash.ToLower() + "  $name.zip" | Out-File -Encoding ascii "$name.zip.sha256"
           # Fixed name for releases/latest/download/AnyDisplay-windows-x64.zip.
           Copy-Item "$name.zip" AnyDisplay-windows-x64.zip
+
+          # Build Inno Setup installer
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
+          $setup = "AnyDisplay-$tag-windows-x64-setup"
+          & $iscc "/DAppVersion=$ver" "/DOutputBaseFilename=$setup" windows/installer/anydisplay.iss
+          Copy-Item "windows/installer/out/$setup.exe" "$setup.exe"
+          (Get-FileHash "$setup.exe" -Algorithm SHA256).Hash.ToLower() + "  $setup.exe" | Out-File -Encoding ascii "$setup.exe.sha256"
+          # Fixed name for releases/latest/download/AnyDisplay-windows-x64-setup.exe.
+          Copy-Item "$setup.exe" AnyDisplay-windows-x64-setup.exe
       - name: Upload
         env:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $name = "AnyDisplay-${{ github.event.release.tag_name }}-windows-x64"
-          gh release upload "${{ github.event.release.tag_name }}" "$name.zip" "$name.zip.sha256" AnyDisplay-windows-x64.zip --clobber
+          $tag = "${{ github.event.release.tag_name }}"
+          $name = "AnyDisplay-$tag-windows-x64"
+          $setup = "AnyDisplay-$tag-windows-x64-setup"
+          gh release upload "$tag" `
+            "$name.zip" "$name.zip.sha256" AnyDisplay-windows-x64.zip `
+            "$setup.exe" "$setup.exe.sha256" AnyDisplay-windows-x64-setup.exe --clobber
