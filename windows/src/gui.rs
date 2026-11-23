@@ -1573,71 +1573,34 @@ mod app {
         }
     }
 
-    /// Generates a 32×32 overlapping-displays RGBA icon in the AnyDisplay palette
-    /// (deep ink + burnt orange when idle; forest + signature lime when streaming).
+    /// Returns the 32×32 official AnyDisplay logo RGBA (with a green live dot when streaming).
     fn make_icon_rgba(streaming: bool) -> (Vec<u8>, u32, u32) {
-        let (w, h) = (32u32, 32u32);
-        let mut buf = vec![0u8; (w * h * 4) as usize];
-
-        let mut set_px = |x: u32, y: u32, rgba: [u8; 4]| {
-            if x < w && y < h {
-                let i = ((y * w + x) * 4) as usize;
-                buf[i..i + 4].copy_from_slice(&rgba);
-            }
-        };
-
-        let fill_rect = |set_px: &mut dyn FnMut(u32, u32, [u8; 4]),
-                         x0: u32,
-                         y0: u32,
-                         x1: u32,
-                         y1: u32,
-                         color: [u8; 4]| {
-            for y in y0..y1 {
-                for x in x0..x1 {
-                    set_px(x, y, color);
-                }
-            }
-        };
-
-        let stroke_rect = |set_px: &mut dyn FnMut(u32, u32, [u8; 4]),
-                           x0: u32,
-                           y0: u32,
-                           x1: u32,
-                           y1: u32,
-                           t: u32,
-                           color: [u8; 4]| {
-            for y in y0..y1 {
-                for x in x0..x1 {
-                    if x < x0 + t || x >= x1 - t || y < y0 + t || y >= y1 - t {
-                        set_px(x, y, color);
+        const W: u32 = 32;
+        const H: u32 = 32;
+        let mut buf = include_bytes!("../assets/icon-32.rgba").to_vec();
+        if streaming {
+            // Draw a crisp active indicator dot at the bottom-right corner.
+            let (cx, cy) = (24.5_f32, 24.5_f32);
+            for y in 18..32u32 {
+                for x in 18..32u32 {
+                    let dx = x as f32 + 0.5 - cx;
+                    let dy = y as f32 + 0.5 - cy;
+                    let d = (dx * dx + dy * dy).sqrt();
+                    let color = if d <= 4.3 {
+                        Some([0xD9, 0xED, 0x9D, 0xFF]) // signature lime
+                    } else if d <= 6.0 {
+                        Some([0x24, 0x28, 0x20, 0xFF]) // dark ink ring
+                    } else {
+                        None
+                    };
+                    if let Some(rgba) = color {
+                        let i = ((y * W + x) * 4) as usize;
+                        buf[i..i + 4].copy_from_slice(&rgba);
                     }
                 }
             }
-        };
-
-        let (back_fill, back_border, front_fill, front_border) = if streaming {
-            (
-                [0x25, 0x3E, 0x34, 0xFF], // forest
-                [0xF5, 0xF3, 0xEC, 0xFF], // cream
-                [0xD9, 0xED, 0x9D, 0xFF], // signature lime
-                [0x24, 0x28, 0x20, 0xFF], // ink
-            )
-        } else {
-            (
-                [0x24, 0x28, 0x20, 0xFF], // ink
-                [0xF5, 0xF3, 0xEC, 0xFF], // cream
-                [0xC7, 0x4B, 0x29, 0xFF], // burnt orange
-                [0xF5, 0xF3, 0xEC, 0xFF], // cream
-            )
-        };
-
-        fill_rect(&mut set_px, 3, 4, 22, 19, back_fill);
-        stroke_rect(&mut set_px, 3, 4, 22, 19, 2, back_border);
-
-        fill_rect(&mut set_px, 10, 12, 29, 27, front_fill);
-        stroke_rect(&mut set_px, 10, 12, 29, 27, 2, front_border);
-
-        (buf, w, h)
+        }
+        (buf, W, H)
     }
 
     fn query_monitors() -> Vec<MonitorItem> {
