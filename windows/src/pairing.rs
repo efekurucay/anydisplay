@@ -6,9 +6,11 @@
 
 use crate::proto::crypto;
 use crate::util::{from_hex, to_hex};
+use fs2::FileExt;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PairedDevice {
@@ -53,27 +55,28 @@ impl PairingStore {
         .join("host.json")
     }
 
-    /// Loads the store, creating a fresh host identity when the file is missing or unreadable.
+    /// Loads the store, creating a fresh host identity when the file is missing or invalid.
     pub fn open(path: impl AsRef<Path>) -> std::io::Result<PairingStore> {
         let path = path.as_ref().to_path_buf();
-        let loaded = std::fs::read(&path)
-            .ok()
-            .and_then(|b| serde_json::from_slice::<File>(&b).ok())
-            .filter(|f| from_hex(&f.host_id).is_some_and(|b| b.len() == 16));
-        match loaded {
-            Some(file) => Ok(PairingStore { path, file }),
-            None => {
-                let store = PairingStore {
-                    path,
-                    file: File {
-                        host_id: to_hex(&crypto::random_bytes::<16>()),
-                        devices: BTreeMap::new(),
-                    },
+        let _lock = lock_store(&path)?;
+        let file = match read_store(&path) {
+            Ok(file) => file,
+            Err(err)
+                if matches!(
+                    err.kind(),
+                    io::ErrorKind::NotFound | io::ErrorKind::InvalidData
+                ) =>
+            {
+                let file = File {
+                    host_id: to_hex(&crypto::random_bytes::<16>()),
+                    devices: BTreeMap::new(),
                 };
-                store.save()?;
-                Ok(store)
+                save_store(&path, &file)?;
+                file
             }
-        }
+            Err(err) => return Err(err),
+        };
+        Ok(PairingStore { path, file })
     }
 
     pub fn path(&self) -> &Path {
@@ -101,43 +104,88 @@ impl PairingStore {
         name: &str,
         secret: &[u8; 32],
     ) -> std::io::Result<()> {
-        self.file.devices.insert(
-            to_hex(device_id),
-            PairedDevice {
-                name: name.to_string(),
-                secret: to_hex(secret),
-                paired_at: crate::util::iso8601_now(),
-            },
-        );
-        self.save()
+        self.update_devices(|devices| {
+            devices.insert(
+                to_hex(device_id),
+                PairedDevice {
+                    name: name.to_string(),
+                    secret: to_hex(secret),
+                    paired_at: crate::util::iso8601_now(),
+                },
+            );
+        })
     }
 
     pub fn forget(&mut self, device_id: &[u8; 16]) -> std::io::Result<()> {
-        self.file.devices.remove(&to_hex(device_id));
-        self.save()
+        self.forget_hex(&to_hex(device_id))
     }
 
     pub fn forget_hex(&mut self, device_id_hex: &str) -> std::io::Result<()> {
-        self.file.devices.remove(device_id_hex);
-        self.save()
+        self.update_devices(|devices| {
+            devices.remove(device_id_hex);
+        })
     }
 
     pub fn forget_all(&mut self) -> std::io::Result<()> {
-        self.file.devices.clear();
-        self.save()
+        self.update_devices(BTreeMap::clear)
     }
 
-    fn save(&self) -> std::io::Result<()> {
-        if let Some(dir) = self.path.parent() {
-            std::fs::create_dir_all(dir)?;
+    fn update_devices(
+        &mut self,
+        update: impl FnOnce(&mut BTreeMap<String, PairedDevice>),
+    ) -> io::Result<()> {
+        let _lock = lock_store(&self.path)?;
+        let mut file = read_store(&self.path)?;
+        if file.host_id != self.file.host_id {
+            return Err(io::Error::other("pairing store host identity changed"));
         }
-        let json = serde_json::to_vec_pretty(&self.file).map_err(std::io::Error::other)?;
-        // Write-then-rename so a crash never leaves a truncated store.
-        let tmp = self.path.with_extension("json.tmp");
-        std::fs::write(&tmp, json)?;
-        restrict_permissions(&tmp);
-        std::fs::rename(&tmp, &self.path)
+        // Sessions hold a snapshot during the handshake. Apply each change to the current file.
+        update(&mut file.devices);
+        save_store(&self.path, &file)?;
+        self.file = file;
+        Ok(())
     }
+}
+
+fn lock_store(path: &Path) -> io::Result<fs::File> {
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir)?;
+    }
+    // The lock stays on a separate file because saving replaces the store itself.
+    let lock = fs::File::options()
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(append_suffix(path, ".lock"))?;
+    lock.lock_exclusive()?;
+    Ok(lock)
+}
+
+fn read_store(path: &Path) -> io::Result<File> {
+    let file: File = serde_json::from_slice(&fs::read(path)?)
+        .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+    if from_hex(&file.host_id).is_none_or(|id| id.len() != 16) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "invalid host identity",
+        ));
+    }
+    Ok(file)
+}
+
+fn save_store(path: &Path, file: &File) -> io::Result<()> {
+    let json = serde_json::to_vec_pretty(file).map_err(io::Error::other)?;
+    // Write-then-rename so a crash never leaves a truncated store.
+    let tmp = append_suffix(path, ".tmp");
+    fs::write(&tmp, json)?;
+    restrict_permissions(&tmp);
+    fs::rename(&tmp, path)
+}
+
+fn append_suffix(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.as_os_str().to_os_string();
+    name.push(suffix);
+    name.into()
 }
 
 /// The store holds pairing secrets. On Windows `%APPDATA%` is already private to the user.
@@ -187,6 +235,45 @@ mod tests {
                 .ends_with('Z')
         );
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn preserves_pairings_from_overlapping_sessions() {
+        let dir = std::env::temp_dir().join(format!(
+            "anydisplay-store-{}",
+            to_hex(&crypto::random_bytes::<8>())
+        ));
+        let path = dir.join("host.json");
+        let mut first = PairingStore::open(&path).unwrap();
+        let mut second = PairingStore::open(&path).unwrap();
+
+        first.pair(&[1; 16], "First tablet", &[11; 32]).unwrap();
+        second.pair(&[2; 16], "Second tablet", &[22; 32]).unwrap();
+
+        let saved = PairingStore::open(&path).unwrap();
+        std::fs::remove_dir_all(dir).unwrap();
+        assert_eq!(saved.secret(&[1; 16]), Some([11; 32]));
+        assert_eq!(saved.secret(&[2; 16]), Some([22; 32]));
+    }
+
+    #[test]
+    fn pairing_does_not_restore_a_forgotten_device() {
+        let dir = std::env::temp_dir().join(format!(
+            "anydisplay-store-{}",
+            to_hex(&crypto::random_bytes::<8>())
+        ));
+        let path = dir.join("host.json");
+        let mut ui = PairingStore::open(&path).unwrap();
+        ui.pair(&[1; 16], "First tablet", &[11; 32]).unwrap();
+        let mut session = PairingStore::open(&path).unwrap();
+
+        ui.forget_hex(&to_hex(&[1; 16])).unwrap();
+        session.pair(&[2; 16], "Second tablet", &[22; 32]).unwrap();
+
+        let saved = PairingStore::open(&path).unwrap();
+        std::fs::remove_dir_all(dir).unwrap();
+        assert_eq!(saved.secret(&[1; 16]), None);
+        assert_eq!(saved.secret(&[2; 16]), Some([22; 32]));
     }
 
     #[test]
