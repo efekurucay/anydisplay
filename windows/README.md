@@ -104,8 +104,10 @@ MikeTheTech) when that driver is installed.
 On each stream, anydisplay-win:
 
 - picks that monitor automatically (unless the client asks to mirror or `--monitor` is given);
-- switches it to the stream size with `ChangeDisplaySettingsEx` if the driver offers that mode,
-  without saving the change to the registry (the registry mode comes back when the session ends);
+- keeps the Windows display mode for portrait or rotated monitors and scales the image to fit the stream.
+  Portrait streams also fit within the client's advertised decoder width and height limits;
+- for unrotated landscape monitors, switches to the stream size with `ChangeDisplaySettingsEx` if the
+  driver offers that mode (the registry mode comes back when the session ends);
 - if the driver lacks the mode, keeps the monitor's current mode, scales into the stream and sends
   NOTICE 4.
 

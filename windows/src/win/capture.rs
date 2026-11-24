@@ -3,7 +3,7 @@
 //! the client as CURSOR_POS / CURSOR_SHAPE when it draws the cursor itself.
 
 use super::monitors::Monitor;
-use crate::cursor::CursorImage;
+use crate::cursor::{CursorImage, CursorRotation};
 use crate::platform::FrameSink;
 use crate::proto::messages::{CursorPos, CursorShape, Message};
 use anyhow::{anyhow, Context};
@@ -60,6 +60,7 @@ pub struct Capture {
     /// Top-left of the cursor image in output coordinates.
     cursor_pos: (i32, i32),
     cursor_shape: Option<CursorImage>,
+    capture_cursor_shape: Option<CursorImage>,
     shape_buf: Vec<u8>,
     sent_pos: Option<CursorPos>,
 }
@@ -109,6 +110,7 @@ impl Capture {
             cursor_visible: false,
             cursor_pos: (0, 0),
             cursor_shape: None,
+            capture_cursor_shape: None,
             shape_buf: Vec::new(),
             sent_pos: None,
         };
@@ -122,9 +124,28 @@ impl Capture {
         let dup =
             unsafe { self.output.DuplicateOutput(&self.device) }.context("DuplicateOutput")?;
         let desc = unsafe { dup.GetDesc() };
-        let (w, h) = (desc.ModeDesc.Width, desc.ModeDesc.Height);
+        let (mut w, mut h) = (desc.ModeDesc.Width, desc.ModeDesc.Height);
+        if matches!(
+            desc.Rotation,
+            DXGI_MODE_ROTATION_ROTATE90 | DXGI_MODE_ROTATION_ROTATE270
+        ) {
+            let rect = unsafe { self.output.GetDesc()? }.DesktopCoordinates;
+            // The texture is in scan-out orientation even when the mode reports desktop axes.
+            if (w, h)
+                == (
+                    (rect.right - rect.left) as u32,
+                    (rect.bottom - rect.top) as u32,
+                )
+            {
+                (w, h) = (h, w);
+            }
+        }
+        let rotation_changed = self.rotation != desc.Rotation;
         self.rotation = desc.Rotation;
-        if (w, h) != (self.src_w, self.src_h) || self.vp.is_none() {
+        if rotation_changed {
+            self.capture_cursor_shape = None;
+        }
+        if (w, h) != (self.src_w, self.src_h) || rotation_changed || self.vp.is_none() {
             self.src_w = w;
             self.src_h = h;
             self.create_resources()?;
@@ -399,6 +420,7 @@ impl Capture {
                     ),
                     _ => None,
                 };
+                self.capture_cursor_shape = None;
                 cursor_changed = true;
                 self.send_cursor_shape();
             }
@@ -491,11 +513,7 @@ impl Capture {
             self.composed.clone().unwrap(),
         );
         unsafe { self.context.CopyResource(&composed, &desktop) };
-        // Rotated outputs keep the cursor out of the frame: its position is in rotated coordinates.
-        if self.draw_cursor
-            && self.cursor_visible
-            && self.rotation.0 <= DXGI_MODE_ROTATION_IDENTITY.0
-        {
+        if self.draw_cursor && self.cursor_visible {
             if let Err(e) = self.composite_cursor(&composed) {
                 crate::debug!("cursor compositing failed: {e}");
             }
@@ -531,13 +549,36 @@ impl Capture {
         let Some(shape) = &self.cursor_shape else {
             return Ok(());
         };
+        // The video processor rotates the capture surface into desktop coordinates. Transform
+        // the cursor in the opposite direction so its position and shape match after conversion.
+        let (rotation, bounds) = match self.rotation {
+            DXGI_MODE_ROTATION_ROTATE90 => (
+                Some(CursorRotation::Clockwise270),
+                (self.src_h as i32, self.src_w as i32),
+            ),
+            DXGI_MODE_ROTATION_ROTATE180 => (
+                Some(CursorRotation::Clockwise180),
+                (self.src_w as i32, self.src_h as i32),
+            ),
+            DXGI_MODE_ROTATION_ROTATE270 => (
+                Some(CursorRotation::Clockwise90),
+                (self.src_h as i32, self.src_w as i32),
+            ),
+            _ => (None, (self.src_w as i32, self.src_h as i32)),
+        };
+        let (shape, (left, top)) = if let Some(rotation) = rotation {
+            let pos = rotation.origin(bounds, self.cursor_pos, (shape.w as i32, shape.h as i32));
+            let rotated = self
+                .capture_cursor_shape
+                .get_or_insert_with(|| shape.rotated(rotation));
+            (&*rotated, pos)
+        } else {
+            (shape, self.cursor_pos)
+        };
         let staging = self.cursor_staging.clone().unwrap();
-        let (x0, y0) = (
-            self.cursor_pos.0.max(0) as u32,
-            self.cursor_pos.1.max(0) as u32,
-        );
-        let x1 = ((self.cursor_pos.0 + shape.w as i32).max(0) as u32).min(self.src_w);
-        let y1 = ((self.cursor_pos.1 + shape.h as i32).max(0) as u32).min(self.src_h);
+        let (x0, y0) = (left.max(0) as u32, top.max(0) as u32);
+        let x1 = ((left + shape.w as i32).max(0) as u32).min(self.src_w);
+        let y1 = ((top + shape.h as i32).max(0) as u32).min(self.src_h);
         if x1 <= x0 || y1 <= y0 {
             return Ok(());
         }
@@ -561,14 +602,7 @@ impl Capture {
                 mapped.pData as *mut u8,
                 pitch * CURSOR_MAX as usize,
             );
-            shape.composite_bgra(
-                pixels,
-                pitch,
-                bw,
-                bh,
-                self.cursor_pos.0 - x0 as i32,
-                self.cursor_pos.1 - y0 as i32,
-            );
+            shape.composite_bgra(pixels, pitch, bw, bh, left - x0 as i32, top - y0 as i32);
             self.context.Unmap(&staging, 0);
             let back = D3D11_BOX {
                 left: 0,
