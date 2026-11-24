@@ -16,6 +16,7 @@ use crate::proto::messages::{host_caps, notice, stream_flags, Codec, InputEvent,
 use crate::util::now_us;
 use anyhow::{anyhow, bail, Context};
 use std::time::{Duration, Instant};
+use windows::Win32::Graphics::Dxgi::Common::DXGI_MODE_ROTATION_IDENTITY;
 use windows::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
 
 pub struct WinPlatform {
@@ -131,7 +132,12 @@ impl Platform for WinPlatform {
         }
 
         let (mut w, mut h) = (plan.width, plan.height);
-        if extend && (m.rect.w as u32, m.rect.h as u32) != (w, h) {
+        // Keep the user's mode on rotated displays. Driver modes can reset the orientation.
+        if extend
+            && m.rotation.0 <= DXGI_MODE_ROTATION_IDENTITY.0
+            && m.rect.w >= m.rect.h
+            && (m.rect.w as u32, m.rect.h as u32) != (w, h)
+        {
             if monitors::set_mode(&m.gdi_name, w, h, plan.fps) {
                 self.mode_changed = Some(m.gdi_name.clone());
                 std::thread::sleep(Duration::from_millis(300));
@@ -145,6 +151,15 @@ impl Platform for WinPlatform {
                     notice::RESOLUTION_UNSUPPORTED,
                     format!("The virtual display has no {w}x{h} mode (add it to vdd_settings.xml); using {}x{}", m.rect.w, m.rect.h),
                 ));
+            }
+        }
+        if m.rect.w < m.rect.h {
+            // The decoder's width and height limits apply to the encoded axes.
+            if req.device.max_decode_w != 0 {
+                w = w.min(u32::from(req.device.max_decode_w));
+            }
+            if req.device.max_decode_h != 0 {
+                h = h.min(u32::from(req.device.max_decode_h));
             }
         }
         if (m.rect.w as u32, m.rect.h as u32) != (w, h) {
@@ -265,7 +280,7 @@ impl Platform for WinPlatform {
                 capture,
                 encoder,
                 interval: Duration::from_secs(1) / fps.max(1),
-                last: None,
+                next_capture: None,
                 last_change: None,
                 idle_repeats_left: 0,
                 _com: None,
@@ -331,7 +346,7 @@ struct WinPipeline {
     capture: Capture,
     encoder: Encoder,
     interval: Duration,
-    last: Option<Instant>,
+    next_capture: Option<Instant>,
     last_change: Option<Instant>,
     idle_repeats_left: u32,
     /// Joins the MTA on the video thread; declared last so it is released after the COM objects.
@@ -346,18 +361,23 @@ impl VideoPipeline for WinPipeline {
         if self._com.is_none() {
             self._com = Some(ComGuard::new());
         }
-        if let Some(last) = self.last {
-            let next = last + self.interval;
-            if let Some(wait) = next.checked_duration_since(Instant::now()) {
-                std::thread::sleep(wait);
-            }
+        let now = Instant::now();
+        let scheduled = self.next_capture.unwrap_or(now);
+        if scheduled > now {
+            std::thread::sleep(scheduled - now);
         }
+        // Keep the cadence across short delays and reset after a missed frame interval.
+        let now = Instant::now();
+        let next = scheduled + self.interval;
+        self.next_capture = Some(if next > now {
+            next
+        } else {
+            now + self.interval
+        });
         let timeout = self.interval.as_millis().clamp(1, 100) as u32;
         match self.capture.capture(timeout, force_keyframe)? {
             Captured::Frame(nv12) => {
-                let now = Instant::now();
-                self.last = Some(now);
-                self.last_change = Some(now);
+                self.last_change = Some(Instant::now());
                 self.idle_repeats_left = IDLE_REPEATS;
                 self.encoder.encode(&nv12, now_us(), force_keyframe)
             }
@@ -370,7 +390,6 @@ impl VideoPipeline for WinPipeline {
                 match self.capture.capture(0, true)? {
                     Captured::Frame(nv12) => {
                         self.idle_repeats_left -= 1;
-                        self.last = Some(Instant::now());
                         self.encoder.encode(&nv12, now_us(), false)
                     }
                     Captured::Unchanged => Ok(None),

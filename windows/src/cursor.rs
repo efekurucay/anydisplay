@@ -1,6 +1,28 @@
 //! Cursor images from DXGI pointer shapes: straight-alpha RGBA for CURSOR_SHAPE (PROTOCOL.md 5.4)
 //! and CPU compositing into captured frames (Desktop Duplication frames never contain the cursor).
 
+#[cfg(any(windows, test))]
+#[derive(Clone, Copy)]
+pub enum CursorRotation {
+    Clockwise90,
+    Clockwise180,
+    Clockwise270,
+}
+
+#[cfg(any(windows, test))]
+impl CursorRotation {
+    pub fn origin(self, bounds: (i32, i32), pos: (i32, i32), size: (i32, i32)) -> (i32, i32) {
+        let (w, h) = bounds;
+        let (x, y) = pos;
+        let (cw, ch) = size;
+        match self {
+            Self::Clockwise90 => (h - y - ch, x),
+            Self::Clockwise180 => (w - x - cw, h - y - ch),
+            Self::Clockwise270 => (y, w - x - cw),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CursorImage {
     pub w: u32,
@@ -130,6 +152,27 @@ impl CursorImage {
         out
     }
 
+    #[cfg(any(windows, test))]
+    pub fn rotated(&self, rotation: CursorRotation) -> Self {
+        let (w, h) = match rotation {
+            CursorRotation::Clockwise180 => (self.w, self.h),
+            _ => (self.h, self.w),
+        };
+        let bounds = (self.w as i32, self.h as i32);
+        let (hx, hy) = rotation.origin(bounds, (self.hot_x as i32, self.hot_y as i32), (1, 1));
+        let mut out = Self::blank(w, h, hx as u32, hy as u32);
+        for y in 0..self.h as i32 {
+            for x in 0..self.w as i32 {
+                let (dx, dy) = rotation.origin(bounds, (x, y), (1, 1));
+                let src = (y as u32 * self.w + x as u32) as usize;
+                let dst = (dy as u32 * w + dx as u32) as usize;
+                out.rgba[dst * 4..dst * 4 + 4].copy_from_slice(&self.rgba[src * 4..src * 4 + 4]);
+                out.xor[dst] = self.xor[src];
+            }
+        }
+        out
+    }
+
     /// Draws the cursor with its top-left corner at (`left`, `top`) into a BGRA8 image.
     pub fn composite_bgra(
         &self,
@@ -220,5 +263,34 @@ mod tests {
         let img = CursorImage::from_color(4, 4, 16, &[255; 64], (3, 3)).unwrap();
         let s = img.scaled(0.5);
         assert_eq!((s.w, s.h, s.hot_x, s.hot_y), (2, 2, 1, 1));
+    }
+
+    #[test]
+    fn rotation_preserves_cursor_pixels_and_hotspot() {
+        use CursorRotation::*;
+
+        let img = CursorImage::from_masked_color(
+            3,
+            2,
+            12,
+            &[
+                1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 255,
+            ],
+            (0, 0),
+        )
+        .unwrap();
+        for (rotation, size, hotspot, xor, origin) in [
+            (Clockwise90, (2, 3), (1, 0), 4, (7, -1)),
+            (Clockwise180, (3, 2), (2, 1), 0, (10, 7)),
+            (Clockwise270, (2, 3), (0, 2), 1, (2, 10)),
+        ] {
+            let rotated = img.rotated(rotation);
+            assert_eq!((rotated.w, rotated.h), size);
+            assert_eq!((rotated.hot_x, rotated.hot_y), hotspot);
+            let hot = (hotspot.1 * size.0 + hotspot.0) as usize * 4;
+            assert_eq!(&rotated.rgba[hot..hot + 4], &[0, 0, 1, 255]);
+            assert_eq!(rotated.xor[xor], [0, 0, 2]);
+            assert_eq!(rotation.origin((12, 11), (-1, 2), (3, 2)), origin);
+        }
     }
 }
