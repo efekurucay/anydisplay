@@ -346,6 +346,40 @@ fn incoming_android_connection_requires_a_saved_network_pairing() {
 }
 
 #[test]
+fn incoming_session_restores_blocking_io() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let _client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (stream, _) = listener.accept().unwrap();
+    // Emulate Winsock accepting a connection from a nonblocking listener on any OS.
+    stream.set_nonblocking(true).unwrap();
+    let probe = stream.try_clone().unwrap();
+    let handle = SessionHandle::default();
+    handle.stop(bye::USER);
+    session::run_incoming(
+        stream,
+        &mut PairingStore::open(temp_store()).unwrap(),
+        &mut FakePlatform {
+            rec: Default::default(),
+        },
+        &SessionConfig::default(),
+        &handle,
+        None,
+    )
+    .unwrap_err();
+
+    // The peer stays silent, so a blocking socket waits for the read timeout.
+    probe
+        .set_read_timeout(Some(Duration::from_millis(200)))
+        .unwrap();
+    let start = std::time::Instant::now();
+    probe.peek(&mut [0]).unwrap_err();
+    assert!(
+        start.elapsed() >= Duration::from_millis(100),
+        "incoming socket returned immediately instead of waiting for data"
+    );
+}
+
+#[test]
 fn rejected_pairing_code_fails_the_handshake() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let host = start_host(listener.local_addr().unwrap().port(), temp_store(), false);

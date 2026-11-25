@@ -688,6 +688,8 @@ pub fn run_incoming(
     handle: &SessionHandle,
     on_state: Option<StateCallback>,
 ) -> anyhow::Result<SessionSummary> {
+    // Winsock can inherit nonblocking mode from the listener. Session I/O relies on timeouts.
+    stream.set_nonblocking(false)?;
     stream.set_nodelay(true)?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
     let hs = host_handshake(
