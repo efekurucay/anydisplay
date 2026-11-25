@@ -1,5 +1,4 @@
-//! Persistent host identity and paired devices. Same JSON layout as the macOS host:
-//! `{"host_id": hex16, "devices": {device_id_hex: {"name", "secret", "paired_at"}}}`.
+//! Persistent host identity, paired devices, and Windows GUI connection history.
 //!
 //! Location: `ANYDISPLAY_STORE` if set, else `%APPDATA%\AnyDisplay\host.json` on Windows and
 //! `~/.config/anydisplay/host.json` elsewhere.
@@ -21,11 +20,19 @@ pub struct PairedDevice {
     pub paired_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SavedConnection {
+    pub address: String,
+    pub name: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct File {
     host_id: String,
     #[serde(default)]
     devices: BTreeMap<String, PairedDevice>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    connections: Vec<SavedConnection>,
 }
 
 pub struct PairingStore {
@@ -70,6 +77,7 @@ impl PairingStore {
                 let file = File {
                     host_id: to_hex(&crypto::random_bytes::<16>()),
                     devices: BTreeMap::new(),
+                    connections: Vec::new(),
                 };
                 save_store(&path, &file)?;
                 file
@@ -93,6 +101,48 @@ impl PairingStore {
         &self.file.devices
     }
 
+    pub fn connections(&self) -> &[SavedConnection] {
+        &self.file.connections
+    }
+
+    pub fn remember_connection(&mut self, address: &str, name: &str) -> io::Result<()> {
+        self.update(|file| {
+            let connections = &mut file.connections;
+            let entry = match connections
+                .iter()
+                .position(|entry| entry.address == address)
+            {
+                Some(index) => connections.remove(index),
+                None => SavedConnection {
+                    address: address.to_owned(),
+                    name: if name.trim().is_empty() {
+                        address
+                    } else {
+                        name
+                    }
+                    .to_owned(),
+                },
+            };
+            connections.insert(0, entry);
+        })
+    }
+
+    pub fn edit_connection(&mut self, address: &str, name: Option<&str>) -> io::Result<()> {
+        self.update(|file| {
+            let connections = &mut file.connections;
+            if let Some(index) = connections
+                .iter()
+                .position(|entry| entry.address == address)
+            {
+                if let Some(name) = name {
+                    connections[index].name = name.to_owned();
+                } else {
+                    connections.remove(index);
+                }
+            }
+        })
+    }
+
     pub fn secret(&self, device_id: &[u8; 16]) -> Option<[u8; 32]> {
         let d = self.file.devices.get(&to_hex(device_id))?;
         from_hex(&d.secret)?.try_into().ok()
@@ -104,8 +154,8 @@ impl PairingStore {
         name: &str,
         secret: &[u8; 32],
     ) -> std::io::Result<()> {
-        self.update_devices(|devices| {
-            devices.insert(
+        self.update(|file| {
+            file.devices.insert(
                 to_hex(device_id),
                 PairedDevice {
                     name: name.to_string(),
@@ -121,26 +171,23 @@ impl PairingStore {
     }
 
     pub fn forget_hex(&mut self, device_id_hex: &str) -> std::io::Result<()> {
-        self.update_devices(|devices| {
-            devices.remove(device_id_hex);
+        self.update(|file| {
+            file.devices.remove(device_id_hex);
         })
     }
 
     pub fn forget_all(&mut self) -> std::io::Result<()> {
-        self.update_devices(BTreeMap::clear)
+        self.update(|file| file.devices.clear())
     }
 
-    fn update_devices(
-        &mut self,
-        update: impl FnOnce(&mut BTreeMap<String, PairedDevice>),
-    ) -> io::Result<()> {
+    fn update(&mut self, update: impl FnOnce(&mut File)) -> io::Result<()> {
         let _lock = lock_store(&self.path)?;
         let mut file = read_store(&self.path)?;
         if file.host_id != self.file.host_id {
             return Err(io::Error::other("pairing store host identity changed"));
         }
         // Sessions hold a snapshot during the handshake. Apply each change to the current file.
-        update(&mut file.devices);
+        update(&mut file);
         save_store(&self.path, &file)?;
         self.file = file;
         Ok(())
@@ -202,6 +249,50 @@ fn restrict_permissions(path: &Path) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn saves_named_connections_alongside_pairings() {
+        let dir = std::env::temp_dir().join(format!(
+            "anydisplay-store-{}",
+            to_hex(&crypto::random_bytes::<8>())
+        ));
+        let path = dir.join("host.json");
+        let lan = "192.168.1.20:47820";
+        let tailscale = "100.64.0.20:48000";
+        let mut store = PairingStore::open(&path).unwrap();
+        let mut session = PairingStore::open(&path).unwrap();
+
+        store.remember_connection(tailscale, "Tablet").unwrap();
+        store
+            .edit_connection(tailscale, Some("Tablet (away)"))
+            .unwrap();
+        store.remember_connection(lan, "Tablet").unwrap();
+        assert_eq!(store.connections()[0].address, lan);
+        session.pair(&[1; 16], "Tablet", &[2; 32]).unwrap();
+        store.remember_connection(tailscale, "Device name").unwrap();
+
+        let mut reopened = PairingStore::open(&path).unwrap();
+        assert_eq!(reopened.secret(&[1; 16]), Some([2; 32]));
+        assert_eq!(
+            reopened.connections(),
+            &[
+                SavedConnection {
+                    address: tailscale.into(),
+                    name: "Tablet (away)".into()
+                },
+                SavedConnection {
+                    address: lan.into(),
+                    name: "Tablet".into()
+                },
+            ]
+        );
+        reopened.edit_connection(tailscale, None).unwrap();
+        assert_eq!(
+            PairingStore::open(&path).unwrap().connections()[0].address,
+            lan
+        );
+        fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn persists_identity_and_pairings() {

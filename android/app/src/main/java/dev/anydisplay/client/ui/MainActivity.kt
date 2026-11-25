@@ -24,6 +24,9 @@ import com.google.android.material.progressindicator.CircularProgressIndicator
 import dev.anydisplay.client.BuildConfig
 import dev.anydisplay.client.R
 import dev.anydisplay.client.data.Identity
+import dev.anydisplay.client.data.PcConnection
+import dev.anydisplay.client.data.PcConnections
+import dev.anydisplay.client.data.parsePcAddress
 import dev.anydisplay.client.device.DeviceCaps
 import dev.anydisplay.client.protocol.Proto
 import dev.anydisplay.client.session.ConnectionService
@@ -41,6 +44,7 @@ class MainActivity : BaseActivity() {
     private lateinit var btnDisconnect: Button
     private lateinit var btnStart: Button
     private lateinit var wifiAddress: TextView
+    private val pcConnections by lazy { PcConnections(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -98,6 +102,60 @@ class MainActivity : BaseActivity() {
 
     private fun showConnectPc() {
         if (SessionHub.status.phase !in listOf(Phase.LISTENING, Phase.STOPPED)) return
+        val saved = pcConnections.list()
+        if (saved.isEmpty()) {
+            showPcAddressEntry()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.connect_pc)
+            .setItems(pcConnectionLabels(saved)) { _, which ->
+                ConnectionService.connectPc(this, saved[which].address)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.manage_pc_connections) { _, _ -> managePcConnections() }
+            .setPositiveButton(R.string.new_pc_address) { _, _ -> showPcAddressEntry() }
+            .show()
+    }
+
+    private fun pcConnectionLabels(saved: List<PcConnection>): Array<String> = saved.map {
+        if (it.name == it.address) it.address else "${it.name}\n${it.address}"
+    }.toTypedArray()
+
+    private fun managePcConnections() {
+        val saved = pcConnections.list()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.saved_pc_connections)
+            .setItems(pcConnectionLabels(saved)) { _, which -> editPcConnection(saved[which]) }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun editPcConnection(entry: PcConnection) {
+        val name = EditText(this).apply {
+            hint = getString(R.string.pc_name_hint)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            setSingleLine()
+            setText(entry.name)
+            selectAll()
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.edit_pc_connection)
+            .setMessage(entry.address)
+            .setView(name)
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.remove_pc_connection) { _, _ ->
+                pcConnections.remove(entry.address)
+                showConnectPc()
+            }
+            .setPositiveButton(R.string.save_pc_connection) { _, _ ->
+                pcConnections.rename(entry.address, name.text.toString().trim().ifEmpty { entry.address })
+                showConnectPc()
+            }
+            .show()
+    }
+
+    private fun showPcAddressEntry() {
         val address = EditText(this).apply {
             hint = getString(R.string.pc_address_hint)
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
@@ -111,13 +169,9 @@ class MainActivity : BaseActivity() {
             .setPositiveButton(R.string.connect_pc, null)
             .show()
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val fields = address.text.toString().trim().split('.')
-            val octets = fields.mapNotNull { field ->
-                field.toIntOrNull()?.takeIf { it in 0..255 && field.all { char -> char in '0'..'9' } }
-            }
-            val bytes = if (fields.size == 4 && octets.size == 4) ByteArray(4) { octets[it].toByte() } else null
-            if (bytes != null && java.net.InetAddress.getByAddress(bytes).isSiteLocalAddress) {
-                ConnectionService.connectPc(this, bytes)
+            val target = parsePcAddress(address.text.toString())?.hostAddress
+            if (target != null) {
+                ConnectionService.connectPc(this, target)
                 dialog.dismiss()
             } else {
                 address.error = getString(R.string.pc_address_invalid)

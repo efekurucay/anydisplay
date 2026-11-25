@@ -372,6 +372,12 @@ fn video_loop(
 
 // ---------------------------------------------------------------- connection setup and handshake
 
+/// Limits the paired Android listener to private and shared IPv4 address space.
+pub fn is_android_peer(ip: std::net::Ipv4Addr) -> bool {
+    let [first, second, ..] = ip.octets();
+    ip.is_private() || (first == 100 && (64..=127).contains(&second))
+}
+
 /// Resolves `HOST[:PORT]`, `[v6]:PORT` or a bare IPv6 address.
 pub fn resolve(target: &str, default_port: u16) -> anyhow::Result<SocketAddr> {
     use std::net::ToSocketAddrs;
@@ -1240,6 +1246,16 @@ mod tests {
         out.close(true);
         let first = out.next().unwrap();
         assert_eq!(first.body, vec![10]);
+    }
+
+    #[test]
+    fn accepts_lan_and_tailscale_peers() {
+        for address in ["192.168.1.10", "100.64.0.0", "100.127.255.255"] {
+            assert!(is_android_peer(address.parse().unwrap()), "{address}");
+        }
+        for address in ["100.63.255.255", "100.128.0.0", "8.8.8.8", "127.0.0.1"] {
+            assert!(!is_android_peer(address.parse().unwrap()), "{address}");
+        }
     }
 
     #[test]

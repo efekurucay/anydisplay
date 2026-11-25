@@ -17,7 +17,9 @@ import androidx.core.content.ContextCompat
 import dev.anydisplay.client.Elog
 import dev.anydisplay.client.R
 import dev.anydisplay.client.data.Identity
+import dev.anydisplay.client.data.PcConnections
 import dev.anydisplay.client.data.Settings
+import dev.anydisplay.client.data.parsePcAddress
 import dev.anydisplay.client.device.DeviceCaps
 import dev.anydisplay.client.protocol.Proto
 import dev.anydisplay.client.protocol.SocketTransport
@@ -63,11 +65,8 @@ class ConnectionService : Service(), SessionHub.Listener {
                 stopSelf()
             }
             ACTION_DISCONNECT -> SessionHub.session?.disconnect()
-            ACTION_CONNECT_PC -> intent.getByteArrayExtra(EXTRA_PC_ADDRESS)?.let { bytes ->
-                if (bytes.size == 4) {
-                    val address = InetAddress.getByAddress(bytes)
-                    if (address.isSiteLocalAddress) connectPc(address)
-                }
+            ACTION_CONNECT_PC -> intent.getStringExtra(EXTRA_PC_ADDRESS)?.let { input ->
+                parsePcAddress(input)?.let(::connectPc)
             }
             ACTION_ACCEPT_PAIRING -> SessionHub.pairing?.answer(true)
             ACTION_REJECT_PAIRING -> SessionHub.pairing?.answer(false)
@@ -136,7 +135,7 @@ class ConnectionService : Service(), SessionHub.Listener {
                 socket.connect(InetSocketAddress(address, Proto.PORT), 5_000)
                 synchronized(lock) {
                     outgoing = null
-                    begin(SocketTransport(socket), pairedOnly = true)
+                    begin(SocketTransport(socket), pcAddress = address.hostAddress.orEmpty())
                 }
             } catch (e: Exception) {
                 socket.close()
@@ -150,7 +149,7 @@ class ConnectionService : Service(), SessionHub.Listener {
         }, "anydisplay-connect-pc").start()
     }
 
-    private fun begin(transport: Transport, pairedOnly: Boolean = false) {
+    private fun begin(transport: Transport, pcAddress: String? = null) {
         synchronized(lock) {
             if (stopping) {
                 transport.close()
@@ -161,7 +160,9 @@ class ConnectionService : Service(), SessionHub.Listener {
                 Session.rejectBusy(transport)
                 return
             }
-            val s = Session(this, transport, ::onSessionEnded, pairedOnly)
+            val s = Session(this, transport, ::onSessionEnded, pairedOnly = pcAddress != null) { hostName ->
+                if (pcAddress != null) PcConnections(this).remember(pcAddress, hostName)
+            }
             SessionHub.session = s
             s.start()
         }
@@ -313,7 +314,7 @@ class ConnectionService : Service(), SessionHub.Listener {
 
         fun stop(context: Context) = start(context, ACTION_STOP)
 
-        fun connectPc(context: Context, address: ByteArray) =
+        fun connectPc(context: Context, address: String) =
             start(context, ACTION_CONNECT_PC, Intent().putExtra(EXTRA_PC_ADDRESS, address))
 
         fun createChannels(context: Context) {

@@ -4,7 +4,7 @@
 ;   iscc installer\anydisplay.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.1.6"
+  #define AppVersion "0.1.7"
 #endif
 
 #ifndef OutputBaseFilename
@@ -78,6 +78,12 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 [Run]
 Filename: "{localappdata}\Microsoft\WindowsApps\winget.exe"; Parameters: "install --id=Google.PlatformTools -e --accept-source-agreements --accept-package-agreements"; StatusMsg: "Installing Android Platform-Tools (adb) via winget..."; Flags: waituntilterminated; Tasks: installadb
 Filename: "{app}\anydisplay-gui.exe"; Description: "{cm:LaunchProgram,AnyDisplay}"; Flags: nowait postinstall skipifsilent
+
+[UninstallDelete]
+Type: files; Name: "{userappdata}\AnyDisplay\host.json"; Check: not IsAdminInstallMode
+Type: files; Name: "{userappdata}\AnyDisplay\host.json.lock"; Check: not IsAdminInstallMode
+Type: files; Name: "{userappdata}\AnyDisplay\host.json.tmp"; Check: not IsAdminInstallMode
+Type: dirifempty; Name: "{userappdata}\AnyDisplay"; Check: not IsAdminInstallMode
 
 [Code]
 const
@@ -178,10 +184,8 @@ var
   P: Integer;
 begin
   GetEnvRootAndKey(RootKey, SubKey);
-  if not RegQueryStringValue(RootKey, InstallerKey, PathValueName, Dir) then
-    Exit;
-
-  if RegQueryStringValue(RootKey, SubKey, 'Path', PathVal) then
+  if RegQueryStringValue(RootKey, InstallerKey, PathValueName, Dir) and
+    RegQueryStringValue(RootKey, SubKey, 'Path', PathVal) then
   begin
     PathVal := ';' + PathVal + ';';
     P := Pos(';' + Lowercase(Dir) + ';', Lowercase(PathVal));
@@ -196,6 +200,7 @@ begin
   end;
   RegDeleteValue(RootKey, InstallerKey, PathValueName);
   RegDeleteKeyIfEmpty(RootKey, InstallerKey);
+  RegDeleteKeyIfEmpty(RootKey, 'Software\AnyDisplay');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

@@ -50,7 +50,7 @@ jobs:
           $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
           if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
           & $iscc installer/anydisplay.iss
-      - name: Test installer PATH cleanup
+      - name: Test installer upgrade and uninstall cleanup
         shell: pwsh
         timeout-minutes: 4
         run: |
@@ -74,6 +74,8 @@ jobs:
 
           $setup = Resolve-Path installer/out/AnyDisplay-windows-x64-setup.exe
           $installDir = Join-Path $env:RUNNER_TEMP 'AnyDisplay Install'
+          $dataDir = Join-Path $env:APPDATA 'AnyDisplay'
+          $dataFiles = @('host.json', 'host.json.lock', 'host.json.tmp')
           $environmentKey = 'HKCU:\Environment'
           $basePath = 'C:\other;C:\tools;'
           foreach ($test in @(
@@ -86,9 +88,27 @@ jobs:
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Installed) {
               throw "Unexpected PATH after installing with tasks $($test.Tasks)"
             }
+            New-Item -Path $dataDir -ItemType Directory -Force | Out-Null
+            foreach ($file in $dataFiles) {
+              Set-Content -LiteralPath (Join-Path $dataDir $file) -Value 'fixture'
+            }
+            if ($test.Before -eq $basePath) {
+              Invoke-Setup $setup @('/SP-', '/CURRENTUSER', ('/DIR="' + $installDir + '"'), '/TASKS=addtopath')
+              if ((Get-Content -LiteralPath (Join-Path $dataDir 'host.json')) -cne 'fixture') {
+                throw 'Upgrade did not preserve host data'
+              }
+            }
             Invoke-Setup (Join-Path $installDir 'unins000.exe') @() -WaitForChildren
             if ((Get-ItemPropertyValue $environmentKey Path) -cne $test.Before) {
               throw "Uninstall did not restore the original PATH for tasks $($test.Tasks)"
+            }
+            foreach ($file in $dataFiles) {
+              if (Test-Path -LiteralPath (Join-Path $dataDir $file)) {
+                throw "Uninstall left behind $file"
+              }
+            }
+            if ((Test-Path -LiteralPath $dataDir) -or (Test-Path 'HKCU:\Software\AnyDisplay')) {
+              throw 'Uninstall left behind the AnyDisplay data directory or registry key'
             }
           }
       - name: Test display resolution configuration

@@ -19,14 +19,14 @@ fn main() -> eframe::Result<()> {
 mod app {
     use anydisplay::adb::{Adb, UsbDevice};
     use anydisplay::discovery::{NetworkDevice, WifiMonitor};
-    use anydisplay::pairing::{PairedDevice, PairingStore};
+    use anydisplay::pairing::{PairedDevice, PairingStore, SavedConnection};
     use anydisplay::proto::messages::{bye, Codec, DEFAULT_PORT};
     use anydisplay::session::{self, SessionConfig, SessionHandle, SessionState, StreamInfo};
     use anydisplay::win::monitors;
     use anydisplay::{info, warn};
     use eframe::egui::{self, Color32, CornerRadius, Margin, RichText, Stroke};
     use std::collections::{BTreeMap, HashMap};
-    use std::net::{SocketAddr, TcpListener, TcpStream};
+    use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
     use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
@@ -222,6 +222,8 @@ mod app {
 
         // UI inputs & state
         manual_address: String,
+        saved_connections: Vec<SavedConnection>,
+        editing_connection: Option<SavedConnection>,
         show_logs: bool,
         window_visible: bool,
         quitting: bool,
@@ -296,7 +298,14 @@ mod app {
             );
 
             let monitors = query_monitors();
-            let paired_devices = load_paired_devices();
+            let store = PairingStore::open(PairingStore::default_path()).ok();
+            let paired_devices = store
+                .as_ref()
+                .map(|store| store.devices().clone())
+                .unwrap_or_default();
+            let saved_connections = store
+                .map(|store| store.connections().to_vec())
+                .unwrap_or_default();
 
             info!("AnyDisplay GUI started");
 
@@ -326,6 +335,8 @@ mod app {
                 sync_clipboard: true,
                 verbose_logs: false,
                 manual_address: String::new(),
+                saved_connections,
+                editing_connection: None,
                 show_logs: false,
                 window_visible: true,
                 quitting: false,
@@ -376,13 +387,24 @@ mod app {
             while let Ok(ev) = self.rx.try_recv() {
                 match ev {
                     UiEvent::SessionState { key, state } => {
+                        let mut new_connection = None;
                         if let Some(active) = self.sessions.get_mut(&key) {
                             if let SessionState::Streaming(ref info) = state {
+                                if !matches!(active.state, SessionState::Streaming(_)) {
+                                    new_connection = key
+                                        .strip_prefix("ip:")
+                                        .map(|address| (address, info.device_name.clone()));
+                                }
                                 if !info.device_name.is_empty() {
                                     active.title = info.device_name.clone();
                                 }
                             }
                             active.state = state;
+                        }
+                        if let Some((address, name)) = new_connection {
+                            self.update_saved_connections(|store| {
+                                store.remember_connection(address, &name)
+                            });
                         }
                     }
                     UiEvent::SessionEnded { key, error } => {
@@ -576,6 +598,22 @@ mod app {
             });
         }
 
+        fn update_saved_connections(
+            &mut self,
+            update: impl FnOnce(&mut PairingStore) -> std::io::Result<()>,
+        ) {
+            let result = PairingStore::open(PairingStore::default_path()).and_then(|mut store| {
+                update(&mut store)?;
+                Ok(store.connections().to_vec())
+            });
+            match result {
+                Ok(connections) => self.saved_connections = connections,
+                Err(err) => {
+                    self.last_error = Some(format!("Could not update saved connections: {err}"))
+                }
+            }
+        }
+
         fn start_network_session(
             &mut self,
             key: String,
@@ -639,7 +677,7 @@ mod app {
                 .spawn(move || {
                     while worker.strong_count() > 0 {
                         if let Ok((stream, SocketAddr::V4(peer))) = listener.accept() {
-                            if peer.ip().is_private() && tx.try_send(stream).is_ok() {
+                            if session::is_android_peer(*peer.ip()) && tx.try_send(stream).is_ok() {
                                 ctx.request_repaint();
                             }
                         }
@@ -700,8 +738,11 @@ mod app {
 
             let p = self.palette();
 
-            // Pairing confirmation modal
-            self.render_pairing_modal(ctx, p);
+            if self.pairing_prompt.is_some() {
+                self.render_pairing_modal(ctx, p);
+            } else {
+                self.render_connection_editor(ctx);
+            }
 
             // Top bar
             egui::TopBottomPanel::top("header")
@@ -1059,7 +1100,7 @@ mod app {
                 }
                 if self.incoming.is_some() {
                     ui.label(
-                        RichText::new("On Android, enter this PC’s local IPv4 address (ipconfig).")
+                        RichText::new("On Android, enter this PC’s LAN or Tailscale IPv4 address.")
                             .size(12.0)
                             .color(p.muted),
                     );
@@ -1069,7 +1110,7 @@ mod app {
                     let input_w = (ui.available_width() - 126.0).max(120.0);
                     let resp = ui.add(
                         egui::TextEdit::singleline(&mut self.manual_address)
-                            .hint_text("Tablet IP, e.g. 192.168.1.20")
+                            .hint_text("Android IP[:port]")
                             .margin(Margin::symmetric(8, 6))
                             .desired_width(input_w),
                     );
@@ -1080,11 +1121,16 @@ mod app {
                         .inner
                         .clicked();
                     if (enter || clicked) && has_input {
-                        let target = self.manual_address.trim().to_string();
+                        let input = self.manual_address.trim();
+                        let target = input
+                            .parse::<IpAddr>()
+                            .map(|ip| SocketAddr::new(ip, DEFAULT_PORT).to_string())
+                            .unwrap_or_else(|_| input.to_owned());
                         let key = format!("ip:{target}");
                         self.connect_network(key, target.clone(), target);
                     }
                 });
+                self.render_saved_connections(ui, p);
 
                 ui.add_space(8.0);
                 hairline_divider(ui, p);
@@ -1189,6 +1235,77 @@ mod app {
                     let _ = store.forget_hex(&id);
                     self.paired_devices = store.devices().clone();
                 }
+            }
+        }
+
+        fn render_saved_connections(&mut self, ui: &mut egui::Ui, p: Palette) {
+            if self.saved_connections.is_empty() {
+                return;
+            }
+            let mut reconnect = None;
+            egui::CollapsingHeader::new("Saved connections")
+                .default_open(true)
+                .show(ui, |ui| {
+                    for entry in &self.saved_connections {
+                        let key = format!("ip:{}", entry.address);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if self.sessions.contains_key(&key) {
+                                pill_outline_colored(ui, "CONNECTED", p.forest, p);
+                            } else if accent_button(ui, "Connect", p).clicked() {
+                                reconnect = Some((key, entry.clone()));
+                            }
+                            if outline_button_sm(ui, "Edit", p).clicked() {
+                                self.editing_connection = Some(entry.clone());
+                            }
+                            ui.vertical(|ui| {
+                                ui.label(
+                                    RichText::new(&entry.name).strong().size(13.5).color(p.ink),
+                                );
+                                if entry.name != entry.address {
+                                    ui.label(
+                                        RichText::new(&entry.address)
+                                            .monospace()
+                                            .size(11.0)
+                                            .color(p.muted),
+                                    );
+                                }
+                            });
+                        });
+                    }
+                });
+            if let Some((key, entry)) = reconnect {
+                self.connect_network(key, entry.name, entry.address);
+            }
+        }
+
+        fn render_connection_editor(&mut self, ctx: &egui::Context) {
+            let Some(entry) = self.editing_connection.as_mut() else {
+                return;
+            };
+            let mut save = false;
+            let mut remove = false;
+            let mut cancel = false;
+            let response =
+                egui::Modal::new(egui::Id::new("edit_saved_connection")).show(ctx, |ui| {
+                    ui.heading("Edit connection");
+                    ui.label(&entry.address);
+                    ui.text_edit_singleline(&mut entry.name);
+                    ui.horizontal(|ui| {
+                        save = ui.button("Save").clicked();
+                        remove = ui.button("Remove").clicked();
+                        cancel = ui.button("Cancel").clicked();
+                    });
+                });
+            if save || remove {
+                let address = entry.address.clone();
+                let name = entry.name.trim().to_owned();
+                let name = if name.is_empty() { &address } else { &name };
+                self.update_saved_connections(|store| {
+                    store.edit_connection(&address, save.then_some(name))
+                });
+            }
+            if save || remove || cancel || response.should_close() {
+                self.editing_connection = None;
             }
         }
 

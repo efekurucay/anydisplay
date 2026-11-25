@@ -56,11 +56,23 @@ and minimizes to the system tray when closed.
 1. Connect from the Windows host over Wi-Fi once and confirm the pairing code on both devices.
 2. In the Windows app's **Wi-Fi** section, enable **Allow paired Android devices to connect**. Keep
    the app running in the tray. If Windows Firewall asks, allow the app on private networks.
-3. On the same network, open **Connect to PC** from the Android app's main menu and enter the PC's
-   private IPv4 address. Use `ipconfig` on Windows to find the address.
+3. Open **Connect to PC** from the Android app's main menu. Enter the PC's LAN IPv4 address from
+   `ipconfig`, or use its Tailscale IPv4 address when both devices are connected to the same tailnet.
+4. After the first stream, tap the saved connection to reconnect. Use **Manage** to rename or
+   remove an entry.
 
 The Windows host accepts these connections on TCP port 47820 and authenticates them with the saved
-Wi-Fi pairing. The host must be idle when Android initiates a connection.
+Wi-Fi pairing. The host must be idle when Android initiates a connection. For Tailscale, allow TCP
+47820 to the receiving device in Windows Firewall and your tailnet policy where applicable.
+
+To connect in the other direction over Tailscale, copy the Android device's IPv4 address from
+Tailscale and enter it in the Windows app's **Wi-Fi** section. Windows adds successful manual
+connections to **Saved connections**, where you can connect again or edit their names.
+
+### Updating and uninstalling
+
+Run the setup over your installation to keep Windows pairing and connection history. Uninstalling
+a per-user installation removes these records from that user's default `%APPDATA%\AnyDisplay` folder.
 
 ### Command line
 
@@ -88,7 +100,7 @@ Environment variables:
 
 | Variable | Meaning |
 |---|---|
-| `ANYDISPLAY_STORE` | pairing store path (default `%APPDATA%\AnyDisplay\host.json`, same layout as the macOS host) |
+| `ANYDISPLAY_STORE` | pairing and saved connection store path (default `%APPDATA%\AnyDisplay\host.json`) |
 | `ANYDISPLAY_ADB` | `adb` path (otherwise `PATH`, `ANDROID_HOME`, `%LOCALAPPDATA%\Android\Sdk\platform-tools`) |
 | `ANYDISPLAY_FFMPEG` | `ffmpeg` path for `--test-source` |
 

@@ -52,6 +52,7 @@ class Session(
     private val transport: Transport,
     private val onEnded: (Session) -> Unit,
     private val pairedOnly: Boolean = false,
+    private val onStreamStarted: (String) -> Unit,
 ) {
     private val app = context.applicationContext
     private val settings = Settings(app)
@@ -209,7 +210,9 @@ class Session(
             }
             Proto.CONFIG -> {
                 val c = StreamConfig.decode(f.body)
+                val firstConfig = config == null
                 config = c
+                if (firstConfig) onStreamStarted(hostName)
                 Elog.i("CONFIG $c")
                 SessionHub.update { it.copy(config = c) }
                 videoSink?.onConfig(c)
