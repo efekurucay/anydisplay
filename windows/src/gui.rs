@@ -26,7 +26,7 @@ mod app {
     use anydisplay::{info, warn};
     use eframe::egui::{self, Color32, CornerRadius, Margin, RichText, Stroke};
     use std::collections::{BTreeMap, HashMap};
-    use std::net::SocketAddr;
+    use std::net::{SocketAddr, TcpListener, TcpStream};
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
     use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
@@ -39,6 +39,11 @@ mod app {
 
     const SETUP_URL: &str = "https://efekurucay.com/anydisplay/#setup";
     const VDD_URL: &str = "https://github.com/VirtualDrivers/Virtual-Display-Driver/releases";
+
+    enum Endpoint {
+        Dial(SocketAddr),
+        Incoming(TcpStream),
+    }
 
     /// Design tokens aligned with the AnyDisplay website (warm cream / organic ink / burnt orange
     /// / soft lime in light mode, plus a matching dark variant).
@@ -195,6 +200,7 @@ mod app {
         // Discovery & monitors
         wifi_monitor: Option<WifiMonitor>,
         wifi_error: Option<String>,
+        incoming: Option<(Arc<()>, Receiver<TcpStream>)>,
         usb_snapshot: Arc<Mutex<UsbSnapshot>>,
         usb_stop: Arc<AtomicBool>,
         monitors: Vec<MonitorItem>,
@@ -311,6 +317,7 @@ mod app {
                 usb_retry_after: HashMap::new(),
                 pairing_prompt: None,
                 paired_devices,
+                incoming: None,
                 last_error: None,
                 auto_connect_usb: true,
                 selected_monitor: None,
@@ -540,7 +547,7 @@ mod app {
                         info!("adb forward tcp:{port} -> {serial}:{DEFAULT_PORT}");
                         let addr = SocketAddr::from(([127, 0, 0, 1], port));
                         let res = run_gui_session(
-                            addr,
+                            Endpoint::Dial(addr),
                             key.clone(),
                             title,
                             monitor_idx,
@@ -564,6 +571,17 @@ mod app {
         }
 
         fn connect_network(&mut self, key: String, title: String, target: String) {
+            self.start_network_session(key, title, move || {
+                Ok(Endpoint::Dial(session::resolve(&target, DEFAULT_PORT)?))
+            });
+        }
+
+        fn start_network_session(
+            &mut self,
+            key: String,
+            title: String,
+            endpoint: impl FnOnce() -> anyhow::Result<Endpoint> + Send + 'static,
+        ) {
             if self.sessions.contains_key(&key) {
                 return;
             }
@@ -588,9 +606,8 @@ mod app {
                 .name("anydisplay-net".into())
                 .spawn(move || {
                     let outcome: anyhow::Result<Option<String>> = (|| {
-                        let addr = session::resolve(&target, DEFAULT_PORT)?;
                         run_gui_session(
-                            addr,
+                            endpoint()?,
                             key.clone(),
                             title,
                             monitor_idx,
@@ -608,6 +625,42 @@ mod app {
                     ctx.request_repaint();
                 })
                 .ok();
+        }
+
+        fn listen_for_android(&mut self) -> std::io::Result<()> {
+            let listener = TcpListener::bind(("0.0.0.0", DEFAULT_PORT))?;
+            listener.set_nonblocking(true)?;
+            let lifetime = Arc::new(());
+            let worker = Arc::downgrade(&lifetime);
+            let (tx, rx) = mpsc::sync_channel(1);
+            let ctx = self.ctx.clone();
+            std::thread::Builder::new()
+                .name("anydisplay-incoming".into())
+                .spawn(move || {
+                    while worker.strong_count() > 0 {
+                        if let Ok((stream, SocketAddr::V4(peer))) = listener.accept() {
+                            if peer.ip().is_private() && tx.try_send(stream).is_ok() {
+                                ctx.request_repaint();
+                            }
+                        }
+                        std::thread::sleep(Duration::from_millis(100));
+                    }
+                })?;
+            self.incoming = Some((lifetime, rx));
+            Ok(())
+        }
+
+        fn accept_android_connection(&mut self) {
+            let Some((_, rx)) = &self.incoming else {
+                return;
+            };
+            if let Ok(stream) = rx.try_recv() {
+                if !self.quitting && self.sessions.is_empty() {
+                    self.start_network_session("incoming".into(), "Android".into(), || {
+                        Ok(Endpoint::Incoming(stream))
+                    });
+                }
+            }
         }
 
         fn disconnect(&mut self, key: &str) {
@@ -629,6 +682,7 @@ mod app {
                 }
             }
             self.process_events();
+            self.accept_android_connection();
             self.maybe_auto_connect_usb();
 
             if ctx.input(|i| i.viewport().close_requested()) && !self.quitting {
@@ -991,7 +1045,26 @@ mod app {
                 .collect();
 
             section_card(ui, "WI-FI", p, |ui| {
-                // Manual IP input stays anchored at the top so mDNS updates never shift it.
+                let mut listening = self.incoming.is_some();
+                if ui
+                    .checkbox(&mut listening, "Allow paired Android devices to connect")
+                    .changed()
+                {
+                    if !listening {
+                        self.incoming = None;
+                    } else if let Err(err) = self.listen_for_android() {
+                        self.last_error =
+                            Some(format!("Could not listen for Android connections: {err}"));
+                    }
+                }
+                if self.incoming.is_some() {
+                    ui.label(
+                        RichText::new("On Android, enter this PC’s local IPv4 address (ipconfig).")
+                            .size(12.0)
+                            .color(p.muted),
+                    );
+                }
+                // Keep manual entry above the discovered devices so mDNS updates never shift it.
                 ui.horizontal(|ui| {
                     let input_w = (ui.available_width() - 126.0).max(120.0);
                     let resp = ui.add(
@@ -1300,7 +1373,7 @@ mod app {
 
     #[allow(clippy::too_many_arguments)]
     fn run_gui_session(
-        addr: SocketAddr,
+        endpoint: Endpoint,
         key: String,
         title: String,
         monitor_idx: Option<usize>,
@@ -1339,15 +1412,28 @@ mod app {
             state_ctx.request_repaint();
         });
 
-        let summary = session::run_with_state(
-            addr,
-            &mut store,
-            &mut platform,
-            &cfg,
-            prompt,
-            &handle,
-            Some(on_state),
-        )?;
+        let summary = match endpoint {
+            Endpoint::Dial(addr) => session::run_with_state(
+                addr,
+                &mut store,
+                &mut platform,
+                &cfg,
+                prompt,
+                &handle,
+                Some(on_state),
+            ),
+            Endpoint::Incoming(stream) => {
+                on_state(SessionState::Handshaking);
+                session::run_incoming(
+                    stream,
+                    &mut store,
+                    &mut platform,
+                    &cfg,
+                    &handle,
+                    Some(on_state),
+                )
+            }
+        }?;
         Ok(summary.error)
     }
 

@@ -83,6 +83,10 @@ flowchart LR
 3. The host creates the virtual display, captures it, encodes it in hardware and streams it.
    Input travels back on its own channel, so a big video frame never delays a pen stroke.
 
+During a stream, open the floating menu and tap **±** to pinch to zoom or drag to pan locally.
+Tap **±** again to resume sending touch input to the computer at the current zoom, or **1×** to fit
+the full display. For Android-initiated Wi-Fi sessions on Windows, see the [Windows guide](windows/README.md#connect-from-android).
+
 The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ## Download

@@ -7,8 +7,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -17,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import dev.anydisplay.client.BuildConfig
 import dev.anydisplay.client.R
@@ -53,6 +56,7 @@ class MainActivity : BaseActivity() {
             when (it.itemId) {
                 R.id.action_settings -> startActivity(Intent(this, SettingsActivity::class.java))
                 R.id.action_paired -> startActivity(Intent(this, PairedHostsActivity::class.java))
+                R.id.action_connect_pc -> showConnectPc()
             }
             true
         }
@@ -90,6 +94,35 @@ class MainActivity : BaseActivity() {
     private fun copy(text: String) {
         (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("AnyDisplay", text))
         Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showConnectPc() {
+        if (SessionHub.status.phase !in listOf(Phase.LISTENING, Phase.STOPPED)) return
+        val address = EditText(this).apply {
+            hint = getString(R.string.pc_address_hint)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine()
+        }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.connect_pc)
+            .setMessage(R.string.connect_pc_detail)
+            .setView(address)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.connect_pc, null)
+            .show()
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val fields = address.text.toString().trim().split('.')
+            val octets = fields.mapNotNull { field ->
+                field.toIntOrNull()?.takeIf { it in 0..255 && field.all { char -> char in '0'..'9' } }
+            }
+            val bytes = if (fields.size == 4 && octets.size == 4) ByteArray(4) { octets[it].toByte() } else null
+            if (bytes != null && java.net.InetAddress.getByAddress(bytes).isSiteLocalAddress) {
+                ConnectionService.connectPc(this, bytes)
+                dialog.dismiss()
+            } else {
+                address.error = getString(R.string.pc_address_invalid)
+            }
+        }
     }
 
     override fun onStatus(status: Status) {

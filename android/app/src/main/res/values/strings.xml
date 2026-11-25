@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="connect_pc">Connect to PC</string>
+    <string name="connect_pc_detail">Pair over Wi-Fi first, then allow paired Android devices to connect in AnyDisplay on Windows.</string>
+    <string name="pc_address_hint">PC IPv4 address, e.g. 192.168.1.10</string>
+    <string name="pc_address_invalid">Enter the PC’s private IPv4 address.</string>
+    <string name="menu_zoom">Toggle zoom controls</string>
+    <string name="menu_reset_zoom">Fit display to screen</string>
+    <string name="zoom_controls_on">Pinch to zoom or drag to pan</string>
+    <string name="zoom_controls_off">Touch controls the computer</string>
     <string name="app_name">AnyDisplay</string>
 
     <string name="status_waiting">Waiting for a computer</string>

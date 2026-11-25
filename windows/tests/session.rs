@@ -2,12 +2,12 @@
 
 mod common;
 
-use common::*;
 use anydisplay::pairing::PairingStore;
 use anydisplay::proto::*;
 use anydisplay::session::{self, SessionConfig, SessionHandle, SessionSummary};
+use common::*;
 use std::collections::HashMap;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -286,6 +286,63 @@ fn mode1_pairs_then_mode2_is_encrypted_and_unknown_host_repairs() {
         PairingStore::open(&store).unwrap().secret(&[9; 16]),
         id.secrets.values().next().copied()
     );
+}
+
+#[test]
+fn incoming_android_connection_requires_a_saved_network_pairing() {
+    let path = temp_store();
+    let mut store = PairingStore::open(&path).unwrap();
+    let device_id = [6; 16];
+    let secret = [11; 32];
+    store.pair(&device_id, "Test Tablet", &secret).unwrap();
+    let host_id = store.host_id();
+
+    for (id, link, allowed) in [
+        ([5; 16], 1, false),
+        (device_id, 0, false),
+        (device_id, 1, true),
+    ] {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let path = path.clone();
+        let host = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            session::run_incoming(
+                stream,
+                &mut PairingStore::open(path).unwrap(),
+                &mut FakePlatform {
+                    rec: Default::default(),
+                },
+                &SessionConfig::default(),
+                &SessionHandle::default(),
+                None,
+            )
+        });
+        let mut identity = ClientIdentity {
+            device_id: id,
+            secrets: HashMap::from([(host_id, secret)]),
+        };
+        let client = Client::handshake(
+            TcpStream::connect(addr).unwrap(),
+            link,
+            &mut identity,
+            false,
+        );
+        if allowed {
+            let mut client = client.unwrap();
+            assert_eq!(client.mode, 2);
+            assert_eq!(client.start_streaming(default_req()).stream_id, 1);
+            client.send(Bye { reason: bye::USER }.frame());
+            assert!(host.join().unwrap().unwrap().error.is_none());
+        } else {
+            assert!(client.err().unwrap().contains("expected HELLO_H"));
+            let err = host.join().unwrap().unwrap_err();
+            assert!(matches!(
+                err.downcast_ref(),
+                Some(handshake::HandshakeError::PairingRequired)
+            ));
+        }
+    }
 }
 
 #[test]

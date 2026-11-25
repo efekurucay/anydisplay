@@ -44,6 +44,7 @@ pub enum HandshakeError {
     BadMac,
     UserRejected,
     BadPublicKey,
+    PairingRequired,
     Unexpected {
         channel: u8,
         ty: u8,
@@ -67,6 +68,7 @@ impl std::fmt::Display for HandshakeError {
             HandshakeError::BadMac => write!(f, "client confirmation MAC is wrong"),
             HandshakeError::UserRejected => write!(f, "pairing code rejected"),
             HandshakeError::BadPublicKey => write!(f, "client public key is not a P-256 point"),
+            HandshakeError::PairingRequired => write!(f, "Android must pair over Wi-Fi first"),
             HandshakeError::Unexpected { channel, ty } => {
                 write!(
                     f,
@@ -137,6 +139,7 @@ pub struct HostHandshake {
     key: KeyPair,
     host_nonce: [u8; 32],
     secret_for: SecretLookup,
+    paired_only: bool,
     state: State,
 }
 
@@ -166,8 +169,14 @@ impl HostHandshake {
             key,
             host_nonce,
             secret_for: Box::new(secret_for),
+            paired_only: false,
             state: State::AwaitHelloC,
         }
+    }
+
+    pub fn require_pairing(mut self) -> Self {
+        self.paired_only = true;
+        self
     }
 
     /// The device that sent `HELLO_C`, once known.
@@ -360,10 +369,17 @@ impl HostHandshake {
             Ok(h) => h,
             Err(e) => return self.fail(None, HandshakeError::Malformed(e.to_string())),
         };
+        let secret = (self.secret_for)(&hello_c.device_id);
+        if self.paired_only && (secret.is_none() || hello_c.link != 1 || hello_c.auth_required != 1)
+        {
+            return self.fail(
+                Some(auth_fail::AUTH_REQUIRED),
+                HandshakeError::PairingRequired,
+            );
+        }
         let Ok(z) = self.key.ecdh(&hello_c.client_pub) else {
             return self.fail(None, HandshakeError::BadPublicKey);
         };
-        let secret = (self.secret_for)(&hello_c.device_id);
         let mode = match (secret, hello_c.auth_required) {
             (Some(_), _) => AuthMode::Paired,
             (None, 0) => AuthMode::None,

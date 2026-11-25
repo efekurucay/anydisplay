@@ -17,13 +17,13 @@ class HandshakeTest {
 
     private class Outcome(val client: Result<HandshakeResult>, val host: Result<TestHost.Result>, val clientChannel: FrameChannel)
 
-    private fun run(link: Int, host: TestHost, pairs: PairStore, prompt: SasPrompt): Outcome {
+    private fun run(link: Int, host: TestHost, pairs: PairStore, prompt: SasPrompt, pairedOnly: Boolean = false): Outcome {
         val (ct, ht) = TestHost.socketPair(link)
         val cc = FrameChannel(ct)
         val hc = FrameChannel(ht)
         val hostF = pool.submit(Callable { runCatching { host.handshake(hc) }.also { if (it.isFailure) hc.close() } })
         val clientR = runCatching {
-            ClientHandshake(cc, deviceId, "Test Phone", link, pairs, prompt).run()
+            ClientHandshake(cc, deviceId, "Test Phone", link, pairs, prompt, pairedOnly = pairedOnly).run()
         }
         if (clientR.isFailure) cc.close()
         return Outcome(clientR, hostF.get(10, TimeUnit.SECONDS), cc)
@@ -60,9 +60,19 @@ class HandshakeTest {
         hostCh.send(Proto.CH_CONTROL, Proto.KEYFRAME_REQ)
         assertEquals(0, first.clientChannel.receive().body.size)
 
-        val second = run(Proto.LINK_NETWORK, host, pairs, AutoPrompt(true))
+        val second = run(Proto.LINK_NETWORK, host, pairs, AutoPrompt(true), pairedOnly = true)
         assertEquals(2, second.client.getOrThrow().mode)
         assertTrue(second.clientChannel.encrypted)
+    }
+
+    @Test
+    fun clientInitiatedConnectionRejectsNewPairing() {
+        val prompt = AutoPrompt(true)
+        val pairs = MemoryPairStore()
+        val result = run(Proto.LINK_NETWORK, TestHost(), pairs, prompt, pairedOnly = true)
+        assertEquals(Proto.FAIL_AUTH_REQUIRED, (result.client.exceptionOrNull() as HandshakeException).reason)
+        assertTrue(pairs.map.isEmpty())
+        assertFalse(prompt.dismissed)
     }
 
     @Test

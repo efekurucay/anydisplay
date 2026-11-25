@@ -177,6 +177,12 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
                 Snackbar.make(layout, modeLabel(router.mode), Snackbar.LENGTH_SHORT).show()
             },
             FloatingMenu.Item("keyboard", R.drawable.ic_keyboard, getString(R.string.menu_keyboard)) { toggleKeyboard() },
+            FloatingMenu.Item("zoom", 0, getString(R.string.menu_zoom), text = "±") {
+                layout.zoomControls = !layout.zoomControls
+                Snackbar.make(layout, if (layout.zoomControls) R.string.zoom_controls_on else R.string.zoom_controls_off,
+                    Snackbar.LENGTH_SHORT).show()
+            },
+            FloatingMenu.Item("fit", 0, getString(R.string.menu_reset_zoom), text = "1×") { layout.resetZoom() },
             FloatingMenu.Item("undo", R.drawable.ic_undo, getString(R.string.menu_undo)) { shortcut(HidKeys.letter('z'), 0) },
             FloatingMenu.Item("redo", R.drawable.ic_redo, getString(R.string.menu_redo)) {
                 if (session?.hostIsMac == true) shortcut(HidKeys.letter('z'), KeyMods.SHIFT) else shortcut(HidKeys.letter('y'), 0)

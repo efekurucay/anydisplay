@@ -24,8 +24,10 @@ import dev.anydisplay.client.protocol.SocketTransport
 import dev.anydisplay.client.protocol.Transport
 import dev.anydisplay.client.ui.MainActivity
 import dev.anydisplay.client.ui.StreamActivity
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
+import java.net.Socket
 
 /**
  * Foreground service that owns the TCP listener on 47820, the mDNS advertisement, USB accessory links, and the one
@@ -37,6 +39,7 @@ class ConnectionService : Service(), SessionHub.Listener {
     private lateinit var nsd: NsdAdvertiser
     @Volatile private var stopping = false
     private val lock = Any()
+    private var outgoing: Socket? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -60,6 +63,12 @@ class ConnectionService : Service(), SessionHub.Listener {
                 stopSelf()
             }
             ACTION_DISCONNECT -> SessionHub.session?.disconnect()
+            ACTION_CONNECT_PC -> intent.getByteArrayExtra(EXTRA_PC_ADDRESS)?.let { bytes ->
+                if (bytes.size == 4) {
+                    val address = InetAddress.getByAddress(bytes)
+                    if (address.isSiteLocalAddress) connectPc(address)
+                }
+            }
             ACTION_ACCEPT_PAIRING -> SessionHub.pairing?.answer(true)
             ACTION_REJECT_PAIRING -> SessionHub.pairing?.answer(false)
             ACTION_ATTACH_ACCESSORY -> {
@@ -112,14 +121,47 @@ class ConnectionService : Service(), SessionHub.Listener {
         }, "anydisplay-accept").apply { start() }
     }
 
-    private fun begin(transport: Transport) {
+    private fun connectPc(address: InetAddress) {
+        val socket = synchronized(lock) {
+            if (stopping || outgoing != null || SessionHub.session != null) return
+            Socket().also {
+                outgoing = it
+                SessionHub.update { Status(Phase.HANDSHAKE, link = Proto.LINK_NETWORK, peer = address.hostAddress.orEmpty()) }
+            }
+        }
+        Thread({
+            try {
+                socket.receiveBufferSize = 4 * 1024 * 1024
+                socket.sendBufferSize = 512 * 1024
+                socket.connect(InetSocketAddress(address, Proto.PORT), 5_000)
+                synchronized(lock) {
+                    outgoing = null
+                    begin(SocketTransport(socket), pairedOnly = true)
+                }
+            } catch (e: Exception) {
+                socket.close()
+                synchronized(lock) {
+                    outgoing = null
+                    if (!stopping) {
+                        SessionHub.update { Status(if (server != null) Phase.LISTENING else Phase.STOPPED, lastError = e.message) }
+                    }
+                }
+            }
+        }, "anydisplay-connect-pc").start()
+    }
+
+    private fun begin(transport: Transport, pairedOnly: Boolean = false) {
         synchronized(lock) {
-            if (SessionHub.session != null) {
+            if (stopping) {
+                transport.close()
+                return
+            }
+            if (outgoing != null || SessionHub.session != null) {
                 Elog.i("busy: rejecting ${transport.peer}")
                 Session.rejectBusy(transport)
                 return
             }
-            val s = Session(this, transport, ::onSessionEnded)
+            val s = Session(this, transport, ::onSessionEnded, pairedOnly)
             SessionHub.session = s
             s.start()
         }
@@ -127,10 +169,11 @@ class ConnectionService : Service(), SessionHub.Listener {
 
     private fun onSessionEnded(s: Session) {
         synchronized(lock) {
-            if (SessionHub.session === s) SessionHub.session = null
-        }
-        SessionHub.update {
-            Status(phase = if (server != null && !stopping) Phase.LISTENING else Phase.STOPPED, lastError = s.endMessage)
+            if (SessionHub.session !== s) return
+            SessionHub.session = null
+            SessionHub.update {
+                Status(phase = if (server != null && !stopping) Phase.LISTENING else Phase.STOPPED, lastError = s.endMessage)
+            }
         }
     }
 
@@ -239,6 +282,7 @@ class ConnectionService : Service(), SessionHub.Listener {
 
     override fun onDestroy() {
         stopping = true
+        synchronized(lock) { try { outgoing?.close() } catch (_: Exception) {} }
         SessionHub.removeListener(this)
         nsd.stop()
         try { server?.close() } catch (_: Exception) {}
@@ -254,6 +298,8 @@ class ConnectionService : Service(), SessionHub.Listener {
         const val ACTION_ACCEPT_PAIRING = "dev.anydisplay.client.ACCEPT_PAIRING"
         const val ACTION_REJECT_PAIRING = "dev.anydisplay.client.REJECT_PAIRING"
         const val ACTION_ATTACH_ACCESSORY = "dev.anydisplay.client.ATTACH_ACCESSORY"
+        private const val ACTION_CONNECT_PC = "dev.anydisplay.client.CONNECT_PC"
+        private const val EXTRA_PC_ADDRESS = "pc_address"
         private const val CHANNEL_SERVICE = "connection"
         private const val CHANNEL_PAIRING = "pairing"
         private const val NOTIF_ID = 1
@@ -266,6 +312,9 @@ class ConnectionService : Service(), SessionHub.Listener {
         }
 
         fun stop(context: Context) = start(context, ACTION_STOP)
+
+        fun connectPc(context: Context, address: ByteArray) =
+            start(context, ACTION_CONNECT_PC, Intent().putExtra(EXTRA_PC_ADDRESS, address))
 
         fun createChannels(context: Context) {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

@@ -45,6 +45,7 @@ class ClientHandshake(
     private val clientNonce: ByteArray = Crypto.randomBytes(32),
     private val pairSecret: () -> ByteArray = { Crypto.randomBytes(32) },
     private val log: (String) -> Unit = {},
+    private val pairedOnly: Boolean = false,
 ) {
     companion object {
         const val STEP_TIMEOUT_MS = 10_000L
@@ -61,7 +62,9 @@ class ClientHandshake(
         val f = channel.receive()
         if (f.channel == Proto.CH_CONTROL && f.type == Proto.AUTH_FAIL) {
             val reason = if (f.body.isNotEmpty()) f.body[0].toInt() and 0xFF else 0
-            throw HandshakeException("host sent AUTH_FAIL(${Proto.failReasonName(reason)})", reason)
+            val message = if (pairedOnly && reason == Proto.FAIL_AUTH_REQUIRED) "Pair with the PC over Wi-Fi first"
+                else "host sent AUTH_FAIL(${Proto.failReasonName(reason)})"
+            throw HandshakeException(message, reason)
         }
         if (f.channel != Proto.CH_CONTROL || f.type != type) {
             throw HandshakeException("expected type 0x%02x, got ch=%d type=0x%02x".format(type, f.channel, f.type))
@@ -84,6 +87,9 @@ class ClientHandshake(
         val mode = helloH.authMode
         log("HELLO_H host='${helloH.hostName}' os='${helloH.hostOs}' mode=$mode")
         if (mode !in Proto.MODE_NONE..Proto.MODE_PAIRED) fail(Proto.FAIL_BAD_VERSION, "unknown auth mode $mode")
+        if (pairedOnly && mode != Proto.MODE_PAIRED) {
+            fail(Proto.FAIL_AUTH_REQUIRED, "Pair with the PC over Wi-Fi first")
+        }
         if (mode == Proto.MODE_NONE && authRequired == 1) fail(Proto.FAIL_AUTH_REQUIRED, "host offered no auth on a network link")
         val psk = if (mode == Proto.MODE_PAIRED) {
             pairs.secretFor(helloH.hostId) ?: fail(Proto.FAIL_UNKNOWN_HOST, "host claims pairing we do not have")

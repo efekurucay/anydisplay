@@ -51,6 +51,17 @@ Run `target\release\anydisplay-gui.exe` for the desktop GUI and system tray app.
 shows the 6-digit Wi-Fi pairing dialog, lets you pick the monitor/codec/audio/clipboard options,
 and minimizes to the system tray when closed.
 
+#### Connect from Android
+
+1. Connect from the Windows host over Wi-Fi once and confirm the pairing code on both devices.
+2. In the Windows app's **Wi-Fi** section, enable **Allow paired Android devices to connect**. Keep
+   the app running in the tray. If Windows Firewall asks, allow the app on private networks.
+3. On the same network, open **Connect to PC** from the Android app's main menu and enter the PC's
+   private IPv4 address. Use `ipconfig` on Windows to find the address.
+
+The Windows host accepts these connections on TCP port 47820 and authenticates them with the saved
+Wi-Fi pairing. The host must be idle when Android initiates a connection.
+
 ### Command line
 
 ```text

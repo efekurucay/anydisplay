@@ -37,6 +37,15 @@ impl Client {
         confirm: bool,
     ) -> Result<Client, String> {
         let (stream, _) = listener.accept().map_err(|e| e.to_string())?;
+        Self::handshake(stream, link, id, confirm)
+    }
+
+    pub fn handshake(
+        stream: TcpStream,
+        link: u8,
+        id: &mut ClientIdentity,
+        confirm: bool,
+    ) -> Result<Client, String> {
         stream.set_nodelay(true).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(10)))

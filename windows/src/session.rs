@@ -533,13 +533,7 @@ fn connect_and_handshake(
         if let Some(cb) = on_state {
             cb(SessionState::Handshaking);
         }
-        let secrets: std::collections::BTreeMap<[u8; 16], [u8; 32]> = store
-            .devices()
-            .keys()
-            .filter_map(|k| crate::util::from_hex(k)?.try_into().ok())
-            .filter_map(|id: [u8; 16]| Some((id, store.secret(&id)?)))
-            .collect();
-        let hs = HostHandshake::new(identity.clone(), move |id| secrets.get(id).copied());
+        let hs = host_handshake(identity.clone(), store);
         match run_handshake(stream, hs, cfg, prompt, handle, on_state)? {
             HandshakeOutcome::Ok(e) => return Ok(e),
             HandshakeOutcome::Failed(
@@ -555,6 +549,16 @@ fn connect_and_handshake(
             HandshakeOutcome::Failed(e, _) => return Err(anyhow!(e)),
         }
     }
+}
+
+fn host_handshake(identity: HostIdentity, store: &PairingStore) -> HostHandshake {
+    let secrets: std::collections::BTreeMap<[u8; 16], [u8; 32]> = store
+        .devices()
+        .keys()
+        .filter_map(|k| crate::util::from_hex(k)?.try_into().ok())
+        .filter_map(|id: [u8; 16]| Some((id, store.secret(&id)?)))
+        .collect();
+    HostHandshake::new(identity, move |id| secrets.get(id).copied())
 }
 
 fn reader_loop(
@@ -673,6 +677,44 @@ pub fn run_with_state(
             return Err(e);
         }
     };
+    run_established(est, store, platform, cfg, handle, on_state)
+}
+
+pub fn run_incoming(
+    stream: TcpStream,
+    store: &mut PairingStore,
+    platform: &mut dyn Platform,
+    cfg: &SessionConfig,
+    handle: &SessionHandle,
+    on_state: Option<StateCallback>,
+) -> anyhow::Result<SessionSummary> {
+    stream.set_nodelay(true)?;
+    stream.set_write_timeout(Some(Duration::from_secs(5)))?;
+    let hs = host_handshake(
+        HostIdentity {
+            host_id: store.host_id(),
+            host_name: cfg.host_name.clone(),
+            host_os: platform.host_os(),
+        },
+        store,
+    )
+    .require_pairing();
+    let reject_pairing: SasPrompt = Arc::new(|_| false);
+    let est = match run_handshake(stream, hs, cfg, &reject_pairing, handle, on_state.as_ref())? {
+        HandshakeOutcome::Ok(est) => *est,
+        HandshakeOutcome::Failed(e, _) => return Err(anyhow!(e)),
+    };
+    run_established(est, store, platform, cfg, handle, on_state)
+}
+
+fn run_established(
+    est: Established,
+    store: &mut PairingStore,
+    platform: &mut dyn Platform,
+    cfg: &SessionConfig,
+    handle: &SessionHandle,
+    on_state: Option<StateCallback>,
+) -> anyhow::Result<SessionSummary> {
     let r = &est.result;
     if let Some(secret) = r.pair_secret {
         store.pair(&r.device_id, &r.device_name, &secret)?;

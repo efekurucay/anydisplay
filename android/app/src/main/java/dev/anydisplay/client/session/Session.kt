@@ -51,6 +51,7 @@ class Session(
     context: Context,
     private val transport: Transport,
     private val onEnded: (Session) -> Unit,
+    private val pairedOnly: Boolean = false,
 ) {
     private val app = context.applicationContext
     private val settings = Settings(app)
@@ -134,6 +135,7 @@ class Session(
                 channel, identity.deviceId, identity.deviceName, transport.link, PairedHosts(app), prompt,
                 setTimeout = { ms, why -> watchdog.arm(ms, why) },
                 log = { Elog.i("handshake: $it") },
+                pairedOnly = pairedOnly,
             ).run()
             hostName = result.hostName
             hostOs = result.hostOs
