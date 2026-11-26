@@ -97,28 +97,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7eb209b1518d6bb87b283c20095f5228ecda460da70b44f0802523dea6da04"
 
 [[package]]
-name = "usethatscreen-win"
-version = "0.2.0"
-dependencies = [
- "aes-gcm",
- "anyhow",
- "ctrlc",
- "eframe",
- "fs2",
- "getrandom 0.2.17",
- "hkdf",
- "hmac",
- "mdns-sd",
- "p256",
- "serde",
- "serde_json",
- "sha2",
- "tray-icon",
- "windows",
- "winresource",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3237,6 +3215,28 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+]
+
+[[package]]
+name = "usethatscreen-win"
+version = "0.2.1"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "ctrlc",
+ "eframe",
+ "fs2",
+ "getrandom 0.2.17",
+ "hkdf",
+ "hmac",
+ "mdns-sd",
+ "p256",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tray-icon",
+ "windows",
+ "winresource",
 ]
 
 [[package]]

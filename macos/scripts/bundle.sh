@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/usethatscreen"
 APP='build/Use That Screen.app'
-VERSION="${USETHATSCREEN_VERSION:-0.2.0}"
+VERSION="${USETHATSCREEN_VERSION:-0.2.1}"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -30,7 +30,7 @@ cat > "$APP/Contents/Info.plist" <<EOF
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHumanReadableCopyright</key><string>MIT License</string>
-    <key>NSLocalNetworkUsageDescription</key><string>Use That Screen finds and connects to your Android devices on the local network.</string>
+    <key>NSLocalNetworkUsageDescription</key><string>Use That Screen finds and connects to devices on your local network.</string>
     <key>NSBonjourServices</key><array><string>_usethatscreen._tcp</string></array>
 </dict>
 </plist>

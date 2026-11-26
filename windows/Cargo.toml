@@ -1,6 +1,6 @@
 [package]
 name = "usethatscreen-win"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 license = "MIT"
 description = "Use That Screen Windows host: use an Android tablet as an extra display and pen tablet"
