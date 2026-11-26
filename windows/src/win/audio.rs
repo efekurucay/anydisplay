@@ -34,7 +34,7 @@ pub fn start(sink: FrameSink) -> anyhow::Result<AudioStream> {
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
     let s = stop.clone();
     let thread = std::thread::Builder::new()
-        .name("anydisplay-audio".into())
+        .name("usethatscreen-audio".into())
         .spawn(move || {
             let _com = ComGuard::new();
             match open() {

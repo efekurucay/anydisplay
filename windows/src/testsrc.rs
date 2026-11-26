@@ -19,14 +19,14 @@ pub struct TestSource {
 impl Default for TestSource {
     fn default() -> Self {
         TestSource {
-            ffmpeg: std::env::var("ANYDISPLAY_FFMPEG").unwrap_or_else(|_| "ffmpeg".into()),
+            ffmpeg: std::env::var("USETHATSCREEN_FFMPEG").unwrap_or_else(|_| "ffmpeg".into()),
         }
     }
 }
 
 impl Platform for TestSource {
     fn host_os(&self) -> String {
-        format!("anydisplay-win test source ({})", std::env::consts::OS)
+        format!("usethatscreen-win test source ({})", std::env::consts::OS)
     }
 
     fn host_caps(&self) -> u32 {
@@ -169,7 +169,7 @@ fn spawn(ffmpeg: &str, args: &[String]) -> anyhow::Result<(Child, ChildStdout)> 
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .spawn()
-        .with_context(|| format!("starting {ffmpeg} (set ANYDISPLAY_FFMPEG to its path)"))?;
+        .with_context(|| format!("starting {ffmpeg} (set USETHATSCREEN_FFMPEG to its path)"))?;
     let stdout = child.stdout.take().expect("piped stdout");
     Ok((child, stdout))
 }

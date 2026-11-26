@@ -1,7 +1,7 @@
 # H.264 and HEVC measurements
 
 Measured on 2026-11-12 using an Apple M5 Mac and a Huawei P30 Pro (VOG-L09, Android 10)
-running AnyDisplay 0.1.2 over USB. The encoder source is commit `72d252f`.
+running release v0.1.2 over USB. The encoder source is commit `72d252f`.
 The [machine-readable results](benchmarks/2026-11-12-codecs.json) retain encoder measurements,
 Android STATS, repeated-run summaries, and the speed-priority comparison hashes.
 

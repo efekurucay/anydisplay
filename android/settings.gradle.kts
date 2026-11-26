@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "AnyDisplay"
+rootProject.name = "UseThatScreen"
 include(":app")

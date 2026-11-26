@@ -2,7 +2,7 @@
 
 The Windows host of Use That Screen. An Android tablet running the Use That Screen client becomes an extra monitor
 and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and interoperates with
-`tools/anydisplay_ref.py` and the macOS host.
+`tools/usethatscreen_ref.py` and the macOS host.
 
 | Layer | Implementation |
 |---|---|
@@ -13,13 +13,13 @@ and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and in
 | Cursor | Composited into the frame (duplication frames never contain it), or sent as CURSOR_POS / CURSOR_SHAPE when the client draws it |
 | Audio | WASAPI loopback of the default output → PCM s16le 48 kHz stereo |
 | Clipboard | `text/plain` both ways |
-| Transport | Wi-Fi (mDNS `_anydisplay._tcp` discovery, or a typed address) and USB (`adb forward`) |
+| Transport | Wi-Fi (mDNS `_usethatscreen._tcp` discovery, or a typed address) and USB (`adb forward`) |
 
 ## Install
 
-Download and run **`AnyDisplay-windows-x64-setup.exe`** from the
-[latest release](https://github.com/efekurucay/anydisplay/releases/latest). The installer sets up
-both `anydisplay-gui.exe` (Start Menu + system tray) and `anydisplay-win.exe` (with an option to add
+Download and run **`UseThatScreen-windows-x64-setup.exe`** from the
+[latest release](https://github.com/efekurucay/usethatscreen/releases/latest). The installer sets up
+both `usethatscreen-gui.exe` (Start Menu + system tray) and `usethatscreen-win.exe` (with an option to add
 it to `PATH`). It can also install Android Platform-Tools (`adb`) via `winget`.
 
 For an extended desktop, follow the [Virtual Display Driver setup](#extra-monitor-virtual-display-driver-setup).
@@ -33,10 +33,10 @@ A portable `.zip` is also attached to each release if you prefer not to use the 
 Needs Rust 1.82 or newer.
 
 ```sh
-cargo build --release                 # on Windows: target\release\anydisplay-win.exe and anydisplay-gui.exe
+cargo build --release                 # on Windows: target\release\usethatscreen-win.exe and usethatscreen-gui.exe
 cargo test                            # any OS: protocol, crypto vectors, sessions, input translation
 cargo check --target x86_64-pc-windows-msvc   # check the Windows code from macOS / Linux
-iscc installer\anydisplay.iss         # optional: build installer\out\AnyDisplay-windows-x64-setup.exe (Inno Setup 6)
+iscc installer\usethatscreen.iss         # optional: build installer\out\UseThatScreen-windows-x64-setup.exe (Inno Setup 6)
 ```
 
 For the last one, run `rustup target add x86_64-pc-windows-msvc` first. It only type-checks:
@@ -46,8 +46,8 @@ linking a Windows binary needs the MSVC toolchain.
 
 ### GUI (system tray app)
 
-Run `target\release\anydisplay-gui.exe` for the desktop GUI and system tray app. It monitors USB
-(`adb`) and Wi-Fi (`_anydisplay._tcp`) devices continuously, supports automatic USB connection,
+Run `target\release\usethatscreen-gui.exe` for the desktop GUI and system tray app. It monitors USB
+(`adb`) and Wi-Fi (`_usethatscreen._tcp`) devices continuously, supports automatic USB connection,
 shows the 6-digit Wi-Fi pairing dialog, lets you pick the monitor/codec/audio/clipboard options,
 and minimizes to the system tray when closed.
 
@@ -72,14 +72,14 @@ connections to **Saved connections**, where you can connect again or edit their 
 ### Updating and uninstalling
 
 Run the setup over your installation to keep Windows pairing and connection history. Uninstalling
-a per-user installation removes these records from that user's default `%APPDATA%\AnyDisplay` folder.
+a per-user installation removes these records from that user's default `%APPDATA%\UseThatScreen` folder.
 
 ### Command line
 
 ```text
-anydisplay-win list [--seconds N]              monitors, USB (adb) and Wi-Fi (mDNS) clients, paired devices
-anydisplay-win usb [SERIAL] [options]          connect to a USB client through adb forward
-anydisplay-win connect HOST[:PORT] [options]   connect to a client over the network (default port 47820)
+usethatscreen-win list [--seconds N]              monitors, USB (adb) and Wi-Fi (mDNS) clients, paired devices
+usethatscreen-win usb [SERIAL] [options]          connect to a USB client through adb forward
+usethatscreen-win connect HOST[:PORT] [options]   connect to a client over the network (default port 47820)
 
   --monitor N        capture monitor N from `list` (default: the virtual display if installed,
                      else the primary monitor)
@@ -100,9 +100,9 @@ Environment variables:
 
 | Variable | Meaning |
 |---|---|
-| `ANYDISPLAY_STORE` | pairing and saved connection store path (default `%APPDATA%\AnyDisplay\host.json`) |
-| `ANYDISPLAY_ADB` | `adb` path (otherwise `PATH`, `ANDROID_HOME`, `%LOCALAPPDATA%\Android\Sdk\platform-tools`) |
-| `ANYDISPLAY_FFMPEG` | `ffmpeg` path for `--test-source` |
+| `USETHATSCREEN_STORE` | pairing and saved connection store path (default `%APPDATA%\UseThatScreen\host.json`) |
+| `USETHATSCREEN_ADB` | `adb` path (otherwise `PATH`, `ANDROID_HOME`, `%LOCALAPPDATA%\Android\Sdk\platform-tools`) |
+| `USETHATSCREEN_FFMPEG` | `ffmpeg` path for `--test-source` |
 
 `adb` comes from the Android SDK Platform-Tools. The tablet needs USB debugging enabled.
 
@@ -122,9 +122,9 @@ MikeTheTech) when that driver is installed.
    `C:\VirtualDisplayDriver\vdd_settings.xml` or through the Control app; the project wiki has
    the file format. Restart the driver after editing.
 3. In *Settings → System → Display*, place the new monitor next to your main display.
-4. Run `anydisplay-win list`. The driver's monitor is marked `[Virtual Display Driver]`.
+4. Run `usethatscreen-win list`. The driver's monitor is marked `[Virtual Display Driver]`.
 
-On each stream, anydisplay-win:
+On each stream, usethatscreen-win:
 
 - picks that monitor automatically (unless the client asks to mirror or `--monitor` is given);
 - keeps the Windows display mode for portrait or rotated monitors and scales the image to fit the stream.
@@ -137,13 +137,13 @@ On each stream, anydisplay-win:
 The monitor is recognized by its default EDID: PnP id `MTT`, product `0x1337`, name
 "VDD by MTT". A custom EDID loaded into the driver hides it, so use `--monitor N` in that case.
 
-Without the driver, anydisplay-win mirrors the primary monitor (or `--monitor N`), keeps that monitor's
+Without the driver, usethatscreen-win mirrors the primary monitor (or `--monitor N`), keeps that monitor's
 aspect ratio inside the requested size, sets the `mirror` flag in CONFIG and sends NOTICE 5.
 
 ## Running as administrator
 
 Windows does not let a normal process inject input into elevated windows (UIPI). When an
-injection is refused, anydisplay-win sends NOTICE 3 once. Run it elevated to control elevated windows.
+injection is refused, usethatscreen-win sends NOTICE 3 once. Run it elevated to control elevated windows.
 Desktop Duplication pauses on the secure desktop (UAC prompt, lock screen); capture resumes
 on its own when the normal desktop comes back.
 
@@ -154,12 +154,12 @@ real session code. The reference client in `tools/` plays the tablet:
 
 ```sh
 # terminal 1: fake tablet on port 47831, saves the received stream
-tools/.venv/bin/python tools/anydisplay_ref.py client --port 47831 -y --out /tmp/anydisplay.h264
+tools/.venv/bin/python tools/usethatscreen_ref.py client --port 47831 -y --out /tmp/usethatscreen.h264
 
 # terminal 2: loopback = mode 0; a LAN address = mode 1 pairing, then mode 2 on reconnect
 cargo run -- connect 127.0.0.1:47831 --seconds 5 -y
 
-ffprobe -count_frames -show_entries stream=codec_name,width,height,nb_read_frames /tmp/anydisplay.h264
+ffprobe -count_frames -show_entries stream=codec_name,width,height,nb_read_frames /tmp/usethatscreen.h264
 ```
 
 A KEYFRAME_REQ restarts ffmpeg, whose first output is an IDR frame with SPS/PPS.
@@ -168,8 +168,8 @@ A KEYFRAME_REQ restarts ffmpeg, whose first output is an IDR frame with SPS/PPS.
 
 ```text
 src/
-  main.rs            anydisplay-win CLI (list / usb / connect, SAS prompt, Ctrl-C → BYE)
-  gui.rs             anydisplay-gui Windows egui + system tray app
+  main.rs            usethatscreen-win CLI (list / usb / connect, SAS prompt, Ctrl-C → BYE)
+  gui.rs             usethatscreen-gui Windows egui + system tray app
   lib.rs
   proto/             PROTOCOL.md, platform-independent
     wire.rs          little-endian primitives, str / blob
@@ -184,7 +184,7 @@ src/
   testsrc.rs         ffmpeg test-pattern platform (any OS)
   pairing.rs         host identity + paired devices (JSON)
   adb.rs             adb discovery and port forwarding
-  discovery.rs       mDNS browse for _anydisplay._tcp
+  discovery.rs       mDNS browse for _usethatscreen._tcp
   input.rs           coordinate mapping, touch slots, pen states, modifier sync, wheel deltas
   keymap.rs          HID usage → scan code / virtual key
   cursor.rs          DXGI pointer shapes → RGBA, CPU compositing
@@ -208,7 +208,7 @@ tests/
 
 ## Hardware verification and known limits
 
-[@dionisvl reported](https://github.com/efekurucay/anydisplay/pull/3) a successful USB handshake
+[@dionisvl reported](https://github.com/efekurucay/usethatscreen/pull/3) a successful USB handshake
 and hardware HEVC stream at 2200×1440 on Windows 11 with a TCL NXTPAPER 11 Plus (Android 15).
 Touch/pen injection, audio, clipboard, virtual display mode switching and other GPUs still need
 separate hardware verification. See the [setup guide](../docs/SETUP.md) for connection troubleshooting.
@@ -221,6 +221,6 @@ Known limits:
 - **Rotated monitors.** On a rotated monitor the video processor rotates the frame, but the
   cursor is not drawn into it.
 - **Hybrid-GPU laptops.** A hardware encoder must belong to the GPU that owns the duplicated
-  monitor. If it doesn't, anydisplay-win falls back to software encoding.
+  monitor. If it doesn't, usethatscreen-win falls back to software encoding.
 - **Stationary touch.** Contacts that don't move are re-sent every 100 ms. This keeps them alive;
   the exact Windows timeout was not measured.

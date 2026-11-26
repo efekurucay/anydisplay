@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.AnyDisplay" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.UseThatScreen" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_dark</item>
         <item name="colorOnPrimary">#36198F</item>
         <item name="colorPrimaryContainer">#5134BD</item>

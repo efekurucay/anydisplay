@@ -1,11 +1,11 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
-//! `anydisplay-gui`: Windows system-tray and egui host for Use That Screen.
+//! `usethatscreen-gui`: Windows system-tray and egui host for Use That Screen.
 
 #[cfg(not(windows))]
 fn main() {
     eprintln!(
-        "anydisplay-gui is only supported on Windows; use `anydisplay-win` on other platforms."
+        "usethatscreen-gui is only supported on Windows; use `usethatscreen-win` on other platforms."
     );
     std::process::exit(1);
 }
@@ -17,13 +17,13 @@ fn main() -> eframe::Result<()> {
 
 #[cfg(windows)]
 mod app {
-    use anydisplay::adb::{Adb, UsbDevice};
-    use anydisplay::discovery::{NetworkDevice, WifiMonitor};
-    use anydisplay::pairing::{PairedDevice, PairingStore, SavedConnection};
-    use anydisplay::proto::messages::{bye, Codec, DEFAULT_PORT};
-    use anydisplay::session::{self, SessionConfig, SessionHandle, SessionState, StreamInfo};
-    use anydisplay::win::monitors;
-    use anydisplay::{info, warn};
+    use usethatscreen::adb::{Adb, UsbDevice};
+    use usethatscreen::discovery::{NetworkDevice, WifiMonitor};
+    use usethatscreen::pairing::{PairedDevice, PairingStore, SavedConnection};
+    use usethatscreen::proto::messages::{bye, Codec, DEFAULT_PORT};
+    use usethatscreen::session::{self, SessionConfig, SessionHandle, SessionState, StreamInfo};
+    use usethatscreen::win::monitors;
+    use usethatscreen::{info, warn};
     use eframe::egui::{self, Color32, CornerRadius, Margin, RichText, Stroke};
     use std::collections::{BTreeMap, HashMap};
     use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream};
@@ -185,7 +185,7 @@ mod app {
         error: Option<String>,
     }
 
-    struct AnyDisplayApp {
+    struct UseThatScreenApp {
         ctx: egui::Context,
         tx: Sender<UiEvent>,
         rx: Receiver<UiEvent>,
@@ -233,7 +233,7 @@ mod app {
     }
 
     pub fn run() -> eframe::Result<()> {
-        anydisplay::win::init_process();
+        usethatscreen::win::init_process();
         let (rgba, w, h) = make_icon_rgba(false);
         let viewport_icon = egui::IconData {
             rgba,
@@ -249,13 +249,13 @@ mod app {
             ..Default::default()
         };
         eframe::run_native(
-            "AnyDisplay",
+            "UseThatScreen",
             options,
-            Box::new(|cc| Ok(Box::new(AnyDisplayApp::new(cc)))),
+            Box::new(|cc| Ok(Box::new(UseThatScreenApp::new(cc)))),
         )
     }
 
-    impl AnyDisplayApp {
+    impl UseThatScreenApp {
         fn new(cc: &eframe::CreationContext<'_>) -> Self {
             install_fonts(&cc.egui_ctx);
             let dark_mode = match cc.egui_ctx.system_theme() {
@@ -560,7 +560,7 @@ mod app {
             let ctx = self.ctx.clone();
 
             std::thread::Builder::new()
-                .name(format!("anydisplay-usb-{serial}"))
+                .name(format!("usethatscreen-usb-{serial}"))
                 .spawn(move || {
                     let outcome: anyhow::Result<Option<String>> = (|| {
                         let adb = Adb::locate().ok_or_else(|| {
@@ -642,7 +642,7 @@ mod app {
             let ctx = self.ctx.clone();
 
             std::thread::Builder::new()
-                .name("anydisplay-net".into())
+                .name("usethatscreen-net".into())
                 .spawn(move || {
                     let outcome: anyhow::Result<Option<String>> = (|| {
                         run_gui_session(
@@ -674,7 +674,7 @@ mod app {
             let (tx, rx) = mpsc::sync_channel(1);
             let ctx = self.ctx.clone();
             std::thread::Builder::new()
-                .name("anydisplay-incoming".into())
+                .name("usethatscreen-incoming".into())
                 .spawn(move || {
                     while worker.strong_count() > 0 {
                         if let Ok((stream, SocketAddr::V4(peer))) = listener.accept() {
@@ -713,7 +713,7 @@ mod app {
         }
     }
 
-    impl eframe::App for AnyDisplayApp {
+    impl eframe::App for UseThatScreenApp {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
             if self.hwnd.load(Ordering::Relaxed) == 0 {
                 if let Some(h) = find_own_window(APP_NAME) {
@@ -878,7 +878,7 @@ mod app {
         }
     }
 
-    impl AnyDisplayApp {
+    impl UseThatScreenApp {
         fn render_pairing_modal(&mut self, ctx: &egui::Context, p: Palette) {
             let Some(prompt) = &self.pairing_prompt else {
                 return;
@@ -1014,7 +1014,7 @@ mod app {
                     (true, None, _, _) => {
                         ui.label(
                             RichText::new(
-                                "adb not found. Install Android Platform-Tools or set ANYDISPLAY_ADB.",
+                                "adb not found. Install Android Platform-Tools or set USETHATSCREEN_ADB.",
                             )
                             .size(12.0)
                             .color(p.muted),
@@ -1146,7 +1146,7 @@ mod app {
                 } else if wifi_devices.is_empty() && offline_paired.is_empty() {
                     ui.label(
                         RichText::new(
-                            "Searching for devices on the local network (_anydisplay._tcp)…",
+                            "Searching for devices on the local network (_usethatscreen._tcp)…",
                         )
                         .size(12.0)
                         .color(p.muted),
@@ -1456,14 +1456,14 @@ mod app {
                             )
                             .changed()
                         {
-                            anydisplay::log::set_verbose(self.verbose_logs);
+                            usethatscreen::log::set_verbose(self.verbose_logs);
                         }
                         if outline_button_sm(ui, "Clear", p).clicked() {
-                            anydisplay::log::clear_recent();
+                            usethatscreen::log::clear_recent();
                         }
                     });
                     ui.add_space(4.0);
-                    let lines = anydisplay::log::recent();
+                    let lines = usethatscreen::log::recent();
                     egui::Frame::NONE
                         .fill(p.card_bg)
                         .stroke(Stroke::new(1.0, p.hairline))
@@ -1501,7 +1501,7 @@ mod app {
         ctx: egui::Context,
     ) -> anyhow::Result<Option<String>> {
         let mut store = PairingStore::open(PairingStore::default_path())?;
-        let mut platform = anydisplay::win::WinPlatform::new(monitor_idx)?;
+        let mut platform = usethatscreen::win::WinPlatform::new(monitor_idx)?;
 
         let prompt_tx = tx.clone();
         let prompt_ctx = ctx.clone();
@@ -1589,7 +1589,7 @@ mod app {
         ctx: egui::Context,
     ) {
         std::thread::Builder::new()
-            .name("anydisplay-usb-poll".into())
+            .name("usethatscreen-usb-poll".into())
             .spawn(move || {
                 while !stop.load(Ordering::Relaxed) {
                     let next = match Adb::locate() {
@@ -1666,7 +1666,7 @@ mod app {
         let ctx_click = ctx.clone();
         let hwnd_click = hwnd.clone();
         std::thread::Builder::new()
-            .name("anydisplay-tray-click".into())
+            .name("usethatscreen-tray-click".into())
             .spawn(move || {
                 let rx = TrayIconEvent::receiver();
                 while let Ok(ev) = rx.recv() {
@@ -1696,7 +1696,7 @@ mod app {
             .ok();
 
         std::thread::Builder::new()
-            .name("anydisplay-tray-menu".into())
+            .name("usethatscreen-tray-menu".into())
             .spawn(move || {
                 let rx = MenuEvent::receiver();
                 while let Ok(ev) = rx.recv() {

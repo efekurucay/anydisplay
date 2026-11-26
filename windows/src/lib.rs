@@ -1,4 +1,4 @@
-//! AnyDisplay Windows host. Everything outside `win` is platform-independent and tested on any OS.
+//! Use That Screen Windows host. Everything outside `win` is platform-independent and tested on any OS.
 
 #[macro_use]
 pub mod log;

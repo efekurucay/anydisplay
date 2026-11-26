@@ -2,9 +2,9 @@
 
 mod common;
 
-use anydisplay::pairing::PairingStore;
-use anydisplay::proto::*;
-use anydisplay::session::{self, SessionConfig, SessionHandle, SessionSummary};
+use usethatscreen::pairing::PairingStore;
+use usethatscreen::proto::*;
+use usethatscreen::session::{self, SessionConfig, SessionHandle, SessionSummary};
 use common::*;
 use std::collections::HashMap;
 use std::net::{TcpListener, TcpStream};
@@ -13,9 +13,9 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 
 fn temp_store() -> std::path::PathBuf {
-    let n: [u8; 8] = anydisplay::proto::crypto::random_bytes();
+    let n: [u8; 8] = usethatscreen::proto::crypto::random_bytes();
     std::env::temp_dir()
-        .join(format!("anydisplay-test-{}", anydisplay::util::to_hex(&n)))
+        .join(format!("usethatscreen-test-{}", usethatscreen::util::to_hex(&n)))
         .join("host.json")
 }
 

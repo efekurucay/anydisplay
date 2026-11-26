@@ -3,7 +3,7 @@
 use super::frame::Frame;
 use super::wire::{DecodeError, Reader, Writer};
 
-pub const MAGIC: [u8; 4] = *b"ANYD";
+pub const MAGIC: [u8; 4] = *b"UTSC";
 pub const MAJOR: u16 = 1;
 pub const MINOR: u16 = 0;
 pub const DEFAULT_PORT: u16 = 47820;
@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn device_info_layout() {
-        // Same bytes anydisplay_ref.py's client sends.
+        // Same bytes usethatscreen_ref.py's client sends.
         let info = DeviceInfo {
             screen_w: 1920,
             screen_h: 1080,
@@ -511,11 +511,11 @@ mod tests {
             max_touches: 10,
             pen_caps: 0x1f,
             audio: 1,
-            model: "anydisplay-ref".into(),
+            model: "usethatscreen-ref".into(),
             os_version: "python".into(),
         };
         let b = info.body();
-        assert_eq!(b.len(), 2 + 2 + 12 + 4 + 4 + 1 + 4 + 1 + 2 + 14 + 2 + 6);
+        assert_eq!(b.len(), 2 + 2 + 12 + 4 + 4 + 1 + 4 + 1 + 2 + 17 + 2 + 6);
         assert_eq!(&b[..4], &[0x80, 0x07, 0x38, 0x04]);
         assert_eq!(DeviceInfo::from_body(&b).unwrap(), info);
     }

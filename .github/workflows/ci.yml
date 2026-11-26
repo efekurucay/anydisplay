@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - run: pip install cryptography
       - name: Vectors match tools/vectors.json
-        run: python tools/anydisplay_ref.py vectors | diff - tools/vectors.json
+        run: python tools/usethatscreen_ref.py vectors | diff - tools/vectors.json
 
   macos:
     name: macOS host
@@ -49,13 +49,13 @@ jobs:
         run: |
           $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
           if (-not $iscc) { $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" }
-          & $iscc installer/anydisplay.iss
+          & $iscc installer/usethatscreen.iss
       - name: Test installer upgrade and uninstall cleanup
         shell: pwsh
         timeout-minutes: 4
         run: |
           function Invoke-Setup([string]$FilePath, [string[]]$Arguments, [switch]$WaitForChildren) {
-            $log = Join-Path $env:RUNNER_TEMP 'anydisplay-setup-test.log'
+            $log = Join-Path $env:RUNNER_TEMP 'usethatscreen-setup-test.log'
             if (Test-Path $log) { Remove-Item $log }
             $process = Start-Process $FilePath -ArgumentList (
               $Arguments + @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/LOG="' + $log + '"'))
@@ -72,9 +72,9 @@ jobs:
             if ($process.ExitCode -ne 0) { throw "$FilePath exited with code $($process.ExitCode)" }
           }
 
-          $setup = Resolve-Path installer/out/AnyDisplay-windows-x64-setup.exe
-          $installDir = Join-Path $env:RUNNER_TEMP 'AnyDisplay Install'
-          $dataDir = Join-Path $env:APPDATA 'AnyDisplay'
+          $setup = Resolve-Path installer/out/UseThatScreen-windows-x64-setup.exe
+          $installDir = Join-Path $env:RUNNER_TEMP 'UseThatScreen Install'
+          $dataDir = Join-Path $env:APPDATA 'UseThatScreen'
           $dataFiles = @('host.json', 'host.json.lock', 'host.json.tmp')
           $environmentKey = 'HKCU:\Environment'
           $basePath = 'C:\other;C:\tools;'
@@ -107,8 +107,8 @@ jobs:
                 throw "Uninstall left behind $file"
               }
             }
-            if ((Test-Path -LiteralPath $dataDir) -or (Test-Path 'HKCU:\Software\AnyDisplay')) {
-              throw 'Uninstall left behind the AnyDisplay data directory or registry key'
+            if ((Test-Path -LiteralPath $dataDir) -or (Test-Path 'HKCU:\Software\UseThatScreen')) {
+              throw 'Uninstall left behind the UseThatScreen data directory or registry key'
             }
           }
       - name: Test display resolution configuration
@@ -127,11 +127,11 @@ jobs:
           if ((Get-FileHash $settings).Hash -ne $hash) { throw 'Applying resolutions twice changed the file' }
       - uses: actions/upload-artifact@v4
         with:
-          name: anydisplay-win
+          name: usethatscreen-win
           path: |
-            windows/target/release/anydisplay-win.exe
-            windows/target/release/anydisplay-gui.exe
-            windows/installer/out/AnyDisplay-windows-x64-setup.exe
+            windows/target/release/usethatscreen-win.exe
+            windows/target/release/usethatscreen-gui.exe
+            windows/installer/out/UseThatScreen-windows-x64-setup.exe
 
   android:
     name: Android client
@@ -149,5 +149,5 @@ jobs:
       - run: ./gradlew testDebugUnitTest assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: anydisplay-android-debug
+          name: usethatscreen-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk

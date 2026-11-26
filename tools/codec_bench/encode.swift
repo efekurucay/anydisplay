@@ -1,7 +1,7 @@
 import Foundation
 import CoreVideo
 import CoreMedia
-import AnyDisplayProtocol
+import UseThatScreenProtocol
 
 @main struct Bench {
     static func main() throws {

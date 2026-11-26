@@ -4,28 +4,28 @@ plugins {
 }
 
 android {
-    namespace = "dev.anydisplay.client"
+    namespace = "com.usethatscreen.client"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.anydisplay.client"
+        applicationId = "com.usethatscreen.client"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.1.8"
+        versionCode = 10
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Release signing comes from Gradle properties (for example ~/.gradle/gradle.properties) so no
     // key material lives in the repository. Without them the release APK is left unsigned.
-    val releaseStore = providers.gradleProperty("anydisplay.storeFile").orNull
+    val releaseStore = providers.gradleProperty("usethatscreen.storeFile").orNull
     signingConfigs {
         if (releaseStore != null) {
             create("release") {
                 storeFile = file(releaseStore)
-                storePassword = providers.gradleProperty("anydisplay.storePassword").get()
-                keyAlias = providers.gradleProperty("anydisplay.keyAlias").get()
-                keyPassword = providers.gradleProperty("anydisplay.keyPassword").get()
+                storePassword = providers.gradleProperty("usethatscreen.storePassword").get()
+                keyAlias = providers.gradleProperty("usethatscreen.keyAlias").get()
+                keyPassword = providers.gradleProperty("usethatscreen.keyPassword").get()
             }
         }
     }
@@ -51,7 +51,7 @@ android {
 
     testOptions {
         unitTests.all {
-            it.systemProperty("anydisplay.vectors", rootProject.file("../tools/vectors.json").absolutePath)
+            it.systemProperty("usethatscreen.vectors", rootProject.file("../tools/vectors.json").absolutePath)
         }
     }
 }

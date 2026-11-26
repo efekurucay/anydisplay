@@ -8,8 +8,8 @@ Include:
 
 - the host OS and version, and the device model and Android version
 - the link (USB or Wi-Fi) and the codec
-- host output with `-v` (`anydisplay -v …` or `anydisplay-win -v …`)
-- device logs: `adb logcat -s AnyDisplay`
+- host output with `-v` (`usethatscreen -v …` or `usethatscreen-win -v …`)
+- device logs: `adb logcat -s UseThatScreen`
 
 ## Pull requests
 
@@ -22,9 +22,9 @@ Include:
   (cd android && ./gradlew testDebugUnitTest)
   ```
 
-- A protocol change touches `docs/PROTOCOL.md`, `tools/anydisplay_ref.py`, `tools/vectors.json`
+- A protocol change touches `docs/PROTOCOL.md`, `tools/usethatscreen_ref.py`, `tools/vectors.json`
   and all three implementations in the same pull request. Regenerate the vectors with
-  `tools/anydisplay_ref.py vectors > tools/vectors.json`.
+  `tools/usethatscreen_ref.py vectors > tools/vectors.json`.
 - Follow the style of the surrounding code.
 
 ## Releasing (maintainers)
@@ -32,8 +32,8 @@ Include:
 1. Set the version in `android/app/build.gradle.kts` (`versionName`, `versionCode`) and
    `windows/Cargo.toml`, and commit.
 2. Write the release notes to a file, then run `scripts/release.sh vX.Y.Z NOTES.md`. It needs the
-   Android release key configured through Gradle properties (`anydisplay.storeFile`,
-   `anydisplay.storePassword`, `anydisplay.keyAlias`, `anydisplay.keyPassword`).
+   Android release key configured through Gradle properties (`usethatscreen.storeFile`,
+   `usethatscreen.storePassword`, `usethatscreen.keyAlias`, `usethatscreen.keyPassword`).
 3. The release workflow adds the Windows installer and portable zip a few minutes later.
 
 ## Security issues

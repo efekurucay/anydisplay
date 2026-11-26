@@ -17,15 +17,15 @@ grep -q "versionName = \"$VERSION\"" android/app/build.gradle.kts \
     || { echo "android/app/build.gradle.kts versionName is not $VERSION" >&2; exit 1; }
 
 (cd android && ./gradlew -q assembleRelease)
-ANYDISPLAY_VERSION="$VERSION" macos/scripts/bundle.sh
+USETHATSCREEN_VERSION="$VERSION" macos/scripts/bundle.sh
 
 OUT="$(mktemp -d)"
-cp android/app/build/outputs/apk/release/app-release.apk "$OUT/AnyDisplay-$TAG.apk"
-(cd macos/build && ditto -c -k --keepParent "Use That Screen.app" "$OUT/AnyDisplay-$TAG-macOS.zip")
+cp android/app/build/outputs/apk/release/app-release.apk "$OUT/UseThatScreen-$TAG.apk"
+(cd macos/build && ditto -c -k --keepParent "Use That Screen.app" "$OUT/UseThatScreen-$TAG-macOS.zip")
 cd "$OUT"
-shasum -a 256 "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" > SHA256SUMS.txt
-cp "AnyDisplay-$TAG.apk" AnyDisplay.apk
-cp "AnyDisplay-$TAG-macOS.zip" AnyDisplay-macOS.zip
+shasum -a 256 "UseThatScreen-$TAG.apk" "UseThatScreen-$TAG-macOS.zip" > SHA256SUMS.txt
+cp "UseThatScreen-$TAG.apk" UseThatScreen.apk
+cp "UseThatScreen-$TAG-macOS.zip" UseThatScreen-macOS.zip
 
 gh release create "$TAG" --repo "$REPO" --title "Use That Screen $TAG" --notes-file "$NOTES" --latest \
-    "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" SHA256SUMS.txt AnyDisplay.apk AnyDisplay-macOS.zip
+    "UseThatScreen-$TAG.apk" "UseThatScreen-$TAG-macOS.zip" SHA256SUMS.txt UseThatScreen.apk UseThatScreen-macOS.zip

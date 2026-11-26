@@ -1,10 +1,10 @@
-//! Wi-Fi discovery: browse `_anydisplay._tcp` (PROTOCOL.md 2).
+//! Wi-Fi discovery: browse `_usethatscreen._tcp` (PROTOCOL.md 2).
 
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
-pub const SERVICE_TYPE: &str = "_anydisplay._tcp.local.";
+pub const SERVICE_TYPE: &str = "_usethatscreen._tcp.local.";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDevice {
@@ -54,7 +54,7 @@ fn device_from_info(info: &mdns_sd::ResolvedService) -> NetworkDevice {
     }
 }
 
-/// Continuously monitors `_anydisplay._tcp` on a background thread and keeps a live device list.
+/// Continuously monitors `_usethatscreen._tcp` on a background thread and keeps a live device list.
 pub struct WifiMonitor {
     daemon: ServiceDaemon,
     devices: std::sync::Arc<std::sync::Mutex<Vec<NetworkDevice>>>,
@@ -67,7 +67,7 @@ impl WifiMonitor {
         let devices = std::sync::Arc::new(std::sync::Mutex::new(Vec::<NetworkDevice>::new()));
         let shared = devices.clone();
         std::thread::Builder::new()
-            .name("anydisplay-mdns".into())
+            .name("usethatscreen-mdns".into())
             .spawn(move || {
                 while let Ok(event) = rx.recv() {
                     match event {
@@ -103,7 +103,7 @@ impl Drop for WifiMonitor {
     }
 }
 
-/// `My Tablet._anydisplay._tcp.local.` → `My Tablet`.
+/// `My Tablet._usethatscreen._tcp.local.` → `My Tablet`.
 pub fn instance_name(fullname: &str) -> String {
     fullname
         .strip_suffix(&format!(".{SERVICE_TYPE}"))
@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn instance_names() {
         assert_eq!(
-            super::instance_name("My Tablet._anydisplay._tcp.local."),
+            super::instance_name("My Tablet._usethatscreen._tcp.local."),
             "My Tablet"
         );
         assert_eq!(super::instance_name("odd"), "odd");

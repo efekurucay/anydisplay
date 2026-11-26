@@ -40,7 +40,7 @@ impl WinPlatform {
         if let Some(i) = monitor_choice {
             if i >= monitors.len() {
                 bail!(
-                    "--monitor {i}: only {} monitor(s), see `anydisplay-win list`",
+                    "--monitor {i}: only {} monitor(s), see `usethatscreen-win list`",
                     monitors.len()
                 );
             }
@@ -306,7 +306,7 @@ impl Platform for WinPlatform {
             sink(
                 Notice {
                     code: notice::INPUT_PERMISSION,
-                    message: format!("{msg}. Windows blocks input into elevated windows unless anydisplay-win runs as administrator."),
+                    message: format!("{msg}. Windows blocks input into elevated windows unless usethatscreen-win runs as administrator."),
                 }
                 .frame(),
             );

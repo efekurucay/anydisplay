@@ -21,7 +21,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AnyDisplay"
+        android:theme="@style/Theme.UseThatScreen"
         tools:targetApi="36">
 
         <activity
@@ -41,7 +41,7 @@
             android:launchMode="singleTask"
             android:resizeableActivity="false"
             android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.AnyDisplay.Stream"
+            android:theme="@style/Theme.UseThatScreen.Stream"
             android:windowSoftInputMode="adjustNothing|stateHidden"
             tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
@@ -60,7 +60,7 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:noHistory="true"
-            android:theme="@style/Theme.AnyDisplay.Invisible">
+            android:theme="@style/Theme.UseThatScreen.Invisible">
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
             </intent-filter>

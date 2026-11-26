@@ -12,7 +12,7 @@ draw = ImageDraw.Draw(image)
 draw.rectangle((0, 0, 259, 2160), fill='#15202b')
 for row in range(80):
     y = row * 29 + 16
-    draw.text((16, y), f'{row+1:02d}  AnyDisplay', font=small, fill='#a5c8e3')
+    draw.text((16, y), f'{row+1:02d}  Use That Screen', font=small, fill='#a5c8e3')
     draw.text((285, y), f'{row+1:03d}  func updateFrame(index: Int, pts: CMTime) -> Bool {{', font=font, fill='#28303c')
     draw.text((1020, y), 'H.264 / HEVC | 1920 x 1080 @ 60Hz', font=font, fill='#005bbb')
     draw.text((305, y+17), 'Small text: abcdefghijklmnopqrstuvwxyz 0123456789  [] {} ()', font=small, fill='#915000')

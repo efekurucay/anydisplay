@@ -1,0 +1,162 @@
+import UseThatScreenProtocol
+import Foundation
+import Network
+
+/// A client found on the local network via `_usethatscreen._tcp`.
+public struct NetworkDevice: Hashable, Sendable {
+    public let name: String
+    /// TXT `id`: the client's 32-hex-char device_id.
+    public let deviceID: String?
+    public let endpoint: NWEndpoint
+}
+
+/// Browses `_usethatscreen._tcp` with NWBrowser. Callbacks arrive on the main queue.
+public final class BonjourBrowser {
+    private var browser: NWBrowser?
+    public var onChange: (([NetworkDevice]) -> Void)?
+    public private(set) var devices: [NetworkDevice] = []
+
+    public init() {}
+
+    public func start() {
+        let params = NWParameters()
+        params.includePeerToPeer = false
+        let b = NWBrowser(for: .bonjourWithTXTRecord(type: useThatScreenBonjourType, domain: nil), using: params)
+        b.stateUpdateHandler = { state in
+            if case .failed(let error) = state { Log.error("bonjour browser failed: \(error)") }
+            if case .waiting(let error) = state { Log.error("bonjour browser waiting: \(error)") }
+        }
+        b.browseResultsChangedHandler = { [weak self] results, _ in
+            guard let self else { return }
+            self.devices = results.compactMap { result in
+                guard case .service(let name, _, _, _) = result.endpoint else { return nil }
+                var id: String?
+                if case .bonjour(let txt) = result.metadata { id = txt["id"] }
+                return NetworkDevice(name: name, deviceID: id, endpoint: result.endpoint)
+            }.sorted { $0.name < $1.name }
+            self.onChange?(self.devices)
+        }
+        b.start(queue: .main)
+        browser = b
+    }
+
+    public func stop() {
+        browser?.cancel()
+        browser = nil
+    }
+}
+
+/// An Android device attached over USB with debugging enabled.
+public struct UsbDevice: Hashable, Sendable {
+    public let serial: String
+    public let model: String?
+}
+
+/// Talks to `adb`: lists attached devices and sets up `adb forward tcp:<local> tcp:47820`.
+public final class Adb {
+    public let path: String
+    static let noSerial = "(no serial number)"
+
+    /// `USETHATSCREEN_ADB` overrides the search; then PATH, the Android SDK default, and Homebrew.
+    public static func locate() -> String? {
+        let fm = FileManager.default
+        if let env = ProcessInfo.processInfo.environment["USETHATSCREEN_ADB"], fm.isExecutableFile(atPath: env) { return env }
+        let pathDirs = (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map(String.init)
+        let candidates = pathDirs.map { $0 + "/adb" } + [
+            NSHomeDirectory() + "/Library/Android/sdk/platform-tools/adb",
+            "/opt/homebrew/bin/adb",
+            "/usr/local/bin/adb",
+        ]
+        return candidates.first { fm.isExecutableFile(atPath: $0) }
+    }
+
+    public init?(path: String? = Adb.locate()) {
+        guard let path else { return nil }
+        self.path = path
+    }
+
+    public func devices() -> [UsbDevice] {
+        guard let out = run(["devices", "-l"]) else { return [] }
+        return Self.parseDevices(out)
+    }
+
+    /// Parses `adb devices -l`, keeping only devices in the `device` state (authorized and online).
+    public static func parseDevices(_ output: String) -> [UsbDevice] {
+        output.split(whereSeparator: \.isNewline).compactMap { line in
+            let missingSerial = line.hasPrefix(noSerial)
+            let fields = (missingSerial ? line.dropFirst(noSerial.count) : line)
+                .split(whereSeparator: \.isWhitespace).map(String.init)
+            let stateIndex = missingSerial ? 0 : 1
+            guard fields.count > stateIndex, fields[stateIndex] == "device" else { return nil }
+            let model = fields.dropFirst(stateIndex + 1).first { $0.hasPrefix("model:") }.map { String($0.dropFirst(6)) }
+            return UsbDevice(serial: missingSerial ? noSerial : fields[0], model: model)
+        }
+    }
+
+    static func targeted(serial: String, arguments: [String]) -> [String] {
+        // Explicit USB selection also prevents ANDROID_SERIAL from selecting a different device.
+        (serial == noSerial ? ["-d"] : ["-s", serial]) + arguments
+    }
+
+    /// Forwards a free local port to the device's 47820 and returns it.
+    public func forward(serial: String, remotePort: UInt16 = useThatScreenPort) -> UInt16? {
+        guard let out = run(Self.targeted(serial: serial, arguments: ["forward", "tcp:0", "tcp:\(remotePort)"])) else { return nil }
+        return UInt16(out.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    public func removeForward(serial: String, localPort: UInt16) {
+        _ = run(Self.targeted(serial: serial, arguments: ["forward", "--remove", "tcp:\(localPort)"]))
+    }
+
+    private func run(_ args: [String]) -> String? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: path)
+        p.arguments = args
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = Pipe()
+        do { try p.run() } catch {
+            Log.error("adb \(args.joined(separator: " ")): \(error)")
+            return nil
+        }
+        let data = out.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard p.terminationStatus == 0 else {
+            Log.debug("adb \(args.joined(separator: " ")) exited \(p.terminationStatus)")
+            return nil
+        }
+        return String(decoding: data, as: UTF8.self)
+    }
+}
+
+/// Polls `adb devices` and reports changes on the main queue.
+public final class UsbMonitor {
+    private let adb: Adb
+    private let queue = DispatchQueue(label: "usethatscreen.adb")
+    private var timer: DispatchSourceTimer?
+    private var last: [UsbDevice] = []
+    public var onChange: (([UsbDevice]) -> Void)?
+
+    public init(adb: Adb) {
+        self.adb = adb
+    }
+
+    public func start(interval: TimeInterval = 2) {
+        let t = DispatchSource.makeTimerSource(queue: queue)
+        t.schedule(deadline: .now(), repeating: interval)
+        t.setEventHandler { [weak self] in
+            guard let self else { return }
+            let now = self.adb.devices()
+            guard now != self.last else { return }
+            self.last = now
+            DispatchQueue.main.async { self.onChange?(now) }
+        }
+        t.resume()
+        timer = t
+    }
+
+    public func stop() {
+        timer?.cancel()
+        timer = nil
+    }
+}

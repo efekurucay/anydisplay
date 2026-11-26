@@ -2,20 +2,20 @@
 
 These tools feed deterministic 1920×1080, 60 FPS NV12 frames through the application's actual
 Mac `VideoEncoder.swift`. They require macOS, Swift, FFmpeg, and Python with Pillow. Android
-replay also uses the `cryptography` dependency of `tools/anydisplay_ref.py` and an authorized
-USB device with AnyDisplay open.
+replay also uses the `cryptography` dependency of `tools/usethatscreen_ref.py` and an authorized
+USB device with Use That Screen open.
 
 Keep output outside the repository; raw fixtures need approximately 1.2 GB. From the repository root:
 
 ```sh
-OUT=/tmp/anydisplay-codecs
+OUT=/tmp/usethatscreen-codecs
 python3 tools/codec_bench/generate.py "$OUT"
-swiftc -O -swift-version 5 -emit-module -emit-library -module-name AnyDisplayProtocol \
-  macos/Sources/AnyDisplayProtocol/*.swift \
-  -emit-module-path "$OUT/AnyDisplayProtocol.swiftmodule" -o "$OUT/libAnyDisplayProtocol.dylib"
-swiftc -O -swift-version 5 -I "$OUT" -L "$OUT" -lAnyDisplayProtocol \
-  -Xlinker -rpath -Xlinker "$OUT" macos/Sources/AnyDisplayHost/Log.swift \
-  macos/Sources/AnyDisplayHost/VideoEncoder.swift tools/codec_bench/encode.swift -o "$OUT/encode"
+swiftc -O -swift-version 5 -emit-module -emit-library -module-name UseThatScreenProtocol \
+  macos/Sources/UseThatScreenProtocol/*.swift \
+  -emit-module-path "$OUT/UseThatScreenProtocol.swiftmodule" -o "$OUT/libUseThatScreenProtocol.dylib"
+swiftc -O -swift-version 5 -I "$OUT" -L "$OUT" -lUseThatScreenProtocol \
+  -Xlinker -rpath -Xlinker "$OUT" macos/Sources/UseThatScreenHost/Log.swift \
+  macos/Sources/UseThatScreenHost/VideoEncoder.swift tools/codec_bench/encode.swift -o "$OUT/encode"
 for scene in desktop motion; do
   for rate in 5000 7000 10000 20000; do
     for codec in h264 hevc; do

@@ -17,11 +17,11 @@ pub struct Adb {
 }
 
 impl Adb {
-    /// `ANYDISPLAY_ADB`, then `PATH`, then the Android SDK default locations.
+    /// `USETHATSCREEN_ADB`, then `PATH`, then the Android SDK default locations.
     pub fn locate() -> Option<Adb> {
         let exe = if cfg!(windows) { "adb.exe" } else { "adb" };
         let mut candidates: Vec<PathBuf> = Vec::new();
-        if let Some(p) = std::env::var_os("ANYDISPLAY_ADB") {
+        if let Some(p) = std::env::var_os("USETHATSCREEN_ADB") {
             candidates.push(p.into());
         }
         if let Some(path) = std::env::var_os("PATH") {

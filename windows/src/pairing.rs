@@ -1,7 +1,7 @@
 //! Persistent host identity, paired devices, and Windows GUI connection history.
 //!
-//! Location: `ANYDISPLAY_STORE` if set, else `%APPDATA%\AnyDisplay\host.json` on Windows and
-//! `~/.config/anydisplay/host.json` elsewhere.
+//! Location: `USETHATSCREEN_STORE` if set, else `%APPDATA%\UseThatScreen\host.json` on Windows and
+//! `~/.config/usethatscreen/host.json` elsewhere.
 
 use crate::proto::crypto;
 use crate::util::{from_hex, to_hex};
@@ -42,7 +42,7 @@ pub struct PairingStore {
 
 impl PairingStore {
     pub fn default_path() -> PathBuf {
-        if let Some(p) = std::env::var_os("ANYDISPLAY_STORE") {
+        if let Some(p) = std::env::var_os("USETHATSCREEN_STORE") {
             return PathBuf::from(p);
         }
         let base = if cfg!(windows) {
@@ -55,9 +55,9 @@ impl PairingStore {
                 .unwrap_or_else(|| PathBuf::from("."))
         };
         base.join(if cfg!(windows) {
-            "AnyDisplay"
+            "UseThatScreen"
         } else {
-            "anydisplay"
+            "usethatscreen"
         })
         .join("host.json")
     }
@@ -253,7 +253,7 @@ mod tests {
     #[test]
     fn saves_named_connections_alongside_pairings() {
         let dir = std::env::temp_dir().join(format!(
-            "anydisplay-store-{}",
+            "usethatscreen-store-{}",
             to_hex(&crypto::random_bytes::<8>())
         ));
         let path = dir.join("host.json");
@@ -297,7 +297,7 @@ mod tests {
     #[test]
     fn persists_identity_and_pairings() {
         let dir = std::env::temp_dir().join(format!(
-            "anydisplay-store-{}",
+            "usethatscreen-store-{}",
             to_hex(&crypto::random_bytes::<8>())
         ));
         let path = dir.join("host.json");
@@ -331,7 +331,7 @@ mod tests {
     #[test]
     fn preserves_pairings_from_overlapping_sessions() {
         let dir = std::env::temp_dir().join(format!(
-            "anydisplay-store-{}",
+            "usethatscreen-store-{}",
             to_hex(&crypto::random_bytes::<8>())
         ));
         let path = dir.join("host.json");
@@ -350,7 +350,7 @@ mod tests {
     #[test]
     fn pairing_does_not_restore_a_forgotten_device() {
         let dir = std::env::temp_dir().join(format!(
-            "anydisplay-store-{}",
+            "usethatscreen-store-{}",
             to_hex(&crypto::random_bytes::<8>())
         ));
         let path = dir.join("host.json");
@@ -370,7 +370,7 @@ mod tests {
     #[test]
     fn reads_macos_host_layout() {
         let dir = std::env::temp_dir().join(format!(
-            "anydisplay-store-{}",
+            "usethatscreen-store-{}",
             to_hex(&crypto::random_bytes::<8>())
         ));
         std::fs::create_dir_all(&dir).unwrap();

@@ -1,12 +1,12 @@
-//! `anydisplay-win`: command-line Use That Screen host.
+//! `usethatscreen-win`: command-line Use That Screen host.
 
 use anyhow::{anyhow, bail};
-use anydisplay::adb::Adb;
-use anydisplay::pairing::PairingStore;
-use anydisplay::platform::Platform;
-use anydisplay::proto::messages::{bye, Codec, DEFAULT_PORT};
-use anydisplay::session::{self, SessionConfig, SessionHandle};
-use anydisplay::{info, warn};
+use usethatscreen::adb::Adb;
+use usethatscreen::pairing::PairingStore;
+use usethatscreen::platform::Platform;
+use usethatscreen::proto::messages::{bye, Codec, DEFAULT_PORT};
+use usethatscreen::session::{self, SessionConfig, SessionHandle};
+use usethatscreen::{info, warn};
 use std::io::Write;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
@@ -14,9 +14,9 @@ use std::time::Duration;
 
 const USAGE: &str = "\
 usage:
-  anydisplay-win list [--seconds N]              monitors, USB (adb) and Wi-Fi (mDNS) clients, paired devices
-  anydisplay-win usb [SERIAL] [options]          connect to a USB client through adb forward
-  anydisplay-win connect HOST[:PORT] [options]   connect to a client over the network (default port 47820)
+  usethatscreen-win list [--seconds N]              monitors, USB (adb) and Wi-Fi (mDNS) clients, paired devices
+  usethatscreen-win usb [SERIAL] [options]          connect to a USB client through adb forward
+  usethatscreen-win connect HOST[:PORT] [options]   connect to a client over the network (default port 47820)
 
 options:
   --monitor N        capture monitor N from `list` (default: the virtual display if installed,
@@ -29,7 +29,7 @@ options:
   --test-source      stream an ffmpeg test pattern instead of the desktop (any OS)
   -v, --verbose      debug logging
 
-environment: ANYDISPLAY_STORE (pairing store path), ANYDISPLAY_ADB (adb path), ANYDISPLAY_FFMPEG (ffmpeg path)";
+environment: USETHATSCREEN_STORE (pairing store path), USETHATSCREEN_ADB (adb path), USETHATSCREEN_FFMPEG (ffmpeg path)";
 
 #[derive(Default)]
 struct Opts {
@@ -58,7 +58,7 @@ fn parse(args: &[String]) -> anyhow::Result<Opts> {
         };
         match a.as_str() {
             "-y" | "--yes" => o.yes = true,
-            "-v" | "--verbose" => anydisplay::log::set_verbose(true),
+            "-v" | "--verbose" => usethatscreen::log::set_verbose(true),
             "--no-clipboard" => o.clipboard = false,
             "--no-audio" => o.audio = false,
             "--test-source" => o.test_source = true,
@@ -95,10 +95,10 @@ fn make_platform(o: &Opts) -> anyhow::Result<Box<dyn Platform>> {
         if cfg!(not(windows)) && !o.test_source {
             info!("not on Windows: streaming the ffmpeg test pattern (--test-source)");
         }
-        return Ok(Box::new(anydisplay::testsrc::TestSource::default()));
+        return Ok(Box::new(usethatscreen::testsrc::TestSource::default()));
     }
     #[cfg(windows)]
-    return Ok(Box::new(anydisplay::win::WinPlatform::new(o.monitor)?));
+    return Ok(Box::new(usethatscreen::win::WinPlatform::new(o.monitor)?));
     #[cfg(not(windows))]
     unreachable!()
 }
@@ -141,7 +141,7 @@ fn list(o: &Opts) -> anyhow::Result<()> {
     #[cfg(windows)]
     {
         println!("monitors:");
-        for (i, m) in anydisplay::win::monitors::list()?.iter().enumerate() {
+        for (i, m) in usethatscreen::win::monitors::list()?.iter().enumerate() {
             println!("  {i}: {m}");
         }
     }
@@ -157,12 +157,12 @@ fn list(o: &Opts) -> anyhow::Result<()> {
                 println!("  {}  {}", d.serial, d.model.unwrap_or_default());
             }
         }
-        None => println!("usb: adb not found (PATH, Android SDK, or ANYDISPLAY_ADB)"),
+        None => println!("usb: adb not found (PATH, Android SDK, or USETHATSCREEN_ADB)"),
     }
     let seconds = o.seconds.unwrap_or(3.0);
-    let found = anydisplay::discovery::browse(Duration::from_secs_f64(seconds))?;
+    let found = usethatscreen::discovery::browse(Duration::from_secs_f64(seconds))?;
     println!(
-        "wifi (_anydisplay._tcp, {seconds} s):{}",
+        "wifi (_usethatscreen._tcp, {seconds} s):{}",
         if found.is_empty() { " (none)" } else { "" }
     );
     for d in found {
@@ -192,7 +192,7 @@ fn list(o: &Opts) -> anyhow::Result<()> {
 
 fn main() {
     #[cfg(windows)]
-    anydisplay::win::init_process();
+    usethatscreen::win::init_process();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let command = args.first().cloned().unwrap_or_default();
     let result = parse(args.get(1..).unwrap_or_default()).and_then(|o| match command.as_str() {
@@ -206,7 +206,7 @@ fn main() {
         }
         "usb" => {
             let adb = Adb::locate()
-                .ok_or_else(|| anyhow!("adb not found (PATH, Android SDK, or set ANYDISPLAY_ADB)"))?;
+                .ok_or_else(|| anyhow!("adb not found (PATH, Android SDK, or set USETHATSCREEN_ADB)"))?;
             let serial = match o.positional.first() {
                 Some(s) => s.clone(),
                 None => {

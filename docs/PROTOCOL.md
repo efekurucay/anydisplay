@@ -1,4 +1,4 @@
-# AnyDisplay Protocol, version 1
+# Use That Screen Protocol, version 1
 
 Use That Screen turns an Android device into an extra display and pen tablet for a desktop
 computer. Two roles exist:
@@ -8,7 +8,7 @@ computer. Two roles exist:
 - **Host**: the desktop computer (macOS or Windows). It connects to the client,
   creates or captures a display, encodes video, and injects input.
 
-Every implementation (Android, macOS, Windows, `tools/anydisplay_ref.py`) follows this
+Every implementation (Android, macOS, Windows, `tools/usethatscreen_ref.py`) follows this
 document byte for byte. When code and this document disagree, the document wins
 and the code is a bug.
 
@@ -26,7 +26,7 @@ and the code is a bug.
 - TCP. The client listens on port **47820** on all interfaces.
 - USB: the host runs `adb forward tcp:<local> tcp:47820` and connects to
   `127.0.0.1:<local>`. The client sees a loopback peer.
-- Wi-Fi: the client advertises mDNS/DNS-SD service `_anydisplay._tcp.` with its device
+- Wi-Fi: the client advertises mDNS/DNS-SD service `_usethatscreen._tcp.` with its device
   name as instance name and TXT records `id=<32 hex chars device_id>` and `v=1`.
   Hosts may also connect to a manually entered IP.
 - `TCP_NODELAY` on both sides.
@@ -81,8 +81,8 @@ All handshake frames use channel 0 and are never encrypted.
 
 | type | name       | dir   | body |
 |------|------------|-------|------|
-| 0x01 | HELLO_C    | C→H   | `bytes[4] magic="ANYD"`, `u16 major=1`, `u16 minor=0`, `bytes[16] device_id`, `str device_name`, `u8 link`, `u8 auth_required`, `bytes[65] client_pub`, `bytes[32] client_commit` |
-| 0x02 | HELLO_H    | H→C   | `bytes[4] magic="ANYD"`, `u16 major=1`, `u16 minor=0`, `bytes[16] host_id`, `str host_name`, `str host_os`, `u8 auth_mode`, `bytes[65] host_pub`, `bytes[32] host_nonce` |
+| 0x01 | HELLO_C    | C→H   | `bytes[4] magic="UTSC"`, `u16 major=1`, `u16 minor=0`, `bytes[16] device_id`, `str device_name`, `u8 link`, `u8 auth_required`, `bytes[65] client_pub`, `bytes[32] client_commit` |
+| 0x02 | HELLO_H    | H→C   | `bytes[4] magic="UTSC"`, `u16 major=1`, `u16 minor=0`, `bytes[16] host_id`, `str host_name`, `str host_os`, `u8 auth_mode`, `bytes[65] host_pub`, `bytes[32] host_nonce` |
 | 0x08 | REVEAL     | C→H   | `bytes[32] client_nonce` |
 | 0x06 | SAS_OK     | both  | empty |
 | 0x03 | AUTH_H     | H→C   | `bytes[32] mac` |
@@ -121,7 +121,7 @@ All handshake frames use channel 0 and are never encrypted.
 5. Both compute `transcript = SHA-256(body(HELLO_C) || body(HELLO_H) || body(REVEAL))`
    where `body(x)` is the frame body without length/channel/type.
 6. Mode 1 only (numeric comparison):
-   - `sas = u32_le(SHA-256("anydisplay/1 sas" || transcript)[0..4]) mod 1 000 000`,
+   - `sas = u32_le(SHA-256("usethatscreen/1 sas" || transcript)[0..4]) mod 1 000 000`,
      shown as 6 digits with leading zeros on **both** screens.
    - Each user confirms the numbers match. On confirmation a side sends `SAS_OK`;
      on rejection it sends `AUTH_FAIL(user_rejected)`.
@@ -131,7 +131,7 @@ All handshake frames use channel 0 and are never encrypted.
 7. Key schedule:
    - `Z` = ECDH(own private key, peer public key), the 32-byte X coordinate.
    - `psk` = empty for modes 0 and 1, the 32-byte `pair_secret` for mode 2.
-   - `okm = HKDF-SHA256(salt=transcript, ikm=Z || psk, info="anydisplay/1 keys", L=96)`.
+   - `okm = HKDF-SHA256(salt=transcript, ikm=Z || psk, info="usethatscreen/1 keys", L=96)`.
    - `k_h2c = okm[0..32]`, `k_c2h = okm[32..64]`, `k_confirm = okm[64..96]`.
 8. Host sends `AUTH_H` with `mac = HMAC-SHA256(k_confirm, "host" || transcript)`.
    Client verifies (constant time), else `AUTH_FAIL(bad_mac)`.
@@ -143,7 +143,7 @@ All handshake frames use channel 0 and are never encrypted.
     encrypted frame, and both sides persist it (client keyed by `host_id` with
     `host_name`, host keyed by `device_id` with `device_name`).
 
-ASCII strings in the formulas (`"anydisplay/1 sas"`, `"host"`, ...) are their raw
+ASCII strings in the formulas (`"usethatscreen/1 sas"`, `"host"`, ...) are their raw
 ASCII bytes without length prefix.
 
 ### 4.3 Timeouts

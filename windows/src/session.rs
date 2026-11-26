@@ -263,7 +263,7 @@ impl VideoStream {
         });
         let f = flow.clone();
         let thread = std::thread::Builder::new()
-            .name(format!("anydisplay-video-{stream_id}"))
+            .name(format!("usethatscreen-video-{stream_id}"))
             .spawn(move || video_loop(stream_id, pipeline, f, out, events))
             .expect("spawn video thread");
         VideoStream {
@@ -746,14 +746,14 @@ fn run_established(
         let (s, tx, stop) = (stream.try_clone()?, tx.clone(), reader_stop.clone());
         let (decoder, recv) = (est.decoder, est.recv);
         std::thread::Builder::new()
-            .name("anydisplay-reader".into())
+            .name("usethatscreen-reader".into())
             .spawn(move || reader_loop(s, decoder, recv, tx, stop))?
     };
     let writer = {
         let (s, out, tx) = (stream.try_clone()?, out.clone(), tx.clone());
         let send = est.send;
         std::thread::Builder::new()
-            .name("anydisplay-writer".into())
+            .name("usethatscreen-writer".into())
             .spawn(move || writer_loop(s, send, out, tx))?
     };
     handle.attach(tx.clone());

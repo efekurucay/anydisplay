@@ -8,7 +8,7 @@ import threading
 import time
 
 root = Path(__file__).parent
-spec = importlib.util.spec_from_file_location('ref', str(Path(__file__).resolve().parents[1] / 'anydisplay_ref.py'))
+spec = importlib.util.spec_from_file_location('ref', str(Path(__file__).resolve().parents[1] / 'usethatscreen_ref.py'))
 r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(r)
 p = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ for size, key in zip(meta['frame_sizes'], meta['keyframes']):
 sock = socket.create_connection(('127.0.0.1',args.port), timeout=30)
 sock.settimeout(None)
 conn = r.Conn(sock, 'host')
-r.host_handshake(conn, r.load_state('host'), host_name='AnyDisplay codec benchmark', auto_confirm=True)
+r.host_handshake(conn, r.load_state('host'), host_name='Use That Screen codec benchmark', auto_confirm=True)
 info = r.Reader(conn.expect(r.DEVICE_INFO))
 sw, sh = info.u16(), info.u16()
 xdpi, ydpi, refresh = info.f32(), info.f32(), info.f32()

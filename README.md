@@ -8,8 +8,8 @@
 
 USB or Wi-Fi · hardware H.264 / HEVC · pressure-sensitive pen · encrypted pairing · open protocol
 
-[![CI](https://github.com/efekurucay/anydisplay/actions/workflows/ci.yml/badge.svg)](https://github.com/efekurucay/anydisplay/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/efekurucay/anydisplay?include_prereleases)](https://github.com/efekurucay/anydisplay/releases/latest)
+[![CI](https://github.com/efekurucay/usethatscreen/actions/workflows/ci.yml/badge.svg)](https://github.com/efekurucay/usethatscreen/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/efekurucay/usethatscreen?include_prereleases)](https://github.com/efekurucay/usethatscreen/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Android 8.0+](https://img.shields.io/badge/client-Android%208.0%2B-3DDC84?logo=android&logoColor=white)
 ![macOS 14+](https://img.shields.io/badge/host-macOS%2014%2B-000000?logo=apple&logoColor=white)
@@ -57,8 +57,6 @@ Measured on a Huawei P30 Pro (2340×1080, HiSilicon HEVC decoder) with a MacBook
 | USB (`adb forward`) | 60 fps | 0 | 5–7 ms | ~3 ms |
 | Wi-Fi, encrypted | 60 fps | 0 | 5–8 ms | 7–20 ms |
 
-<img src="docs/assets/app-home.jpg" alt="Use That Screen Android app waiting for a computer" width="600">
-
 ## How it works
 
 ```mermaid
@@ -76,7 +74,7 @@ flowchart LR
     IN -- "input events" --> INJ
 ```
 
-1. The Android app listens on TCP port 47820 and announces itself over mDNS (`_anydisplay._tcp`).
+1. The Android app listens on TCP port 47820 and announces itself over mDNS (`_usethatscreen._tcp`).
    Over USB, the host reaches the same port through `adb forward`.
 2. The host connects. Both sides do an ECDH key exchange. The first Wi-Fi connection asks you to
    confirm a 6-digit code on both screens; later connections use the stored pairing secret.
@@ -93,12 +91,12 @@ The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](doc
 
 | Download | For |
 |---|---|
-| [**AnyDisplay.apk**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay.apk) | The Android phone or tablet (Android 8.0+) |
-| [**AnyDisplay-macOS.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
-| [**Use That Screen Windows setup**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
+| [**UseThatScreen.apk**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk) | The Android phone or tablet (Android 8.0+) |
+| [**UseThatScreen-macOS.zip**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
+| [**Use That Screen Windows setup**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
 
 These links always serve the newest version. Checksums and older versions are on the
-[releases page](https://github.com/efekurucay/anydisplay/releases).
+[releases page](https://github.com/efekurucay/usethatscreen/releases).
 
 For a guided first connection and common fixes, see the [setup guide](docs/SETUP.md).
 USB requires [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)
@@ -111,7 +109,7 @@ on the computer and a data-capable USB cable.
    Open Anyway*. Or run `xattr -dr com.apple.quarantine "/Applications/Use That Screen.app"`.
    Use That Screen lives in the menu bar.
 3. **Windows:** run the setup and open **Use That Screen** from the Start menu. With the portable ZIP,
-   extract it and run `anydisplay-gui.exe`. See the [Windows guide](windows/README.md) for
+   extract it and run `usethatscreen-gui.exe`. See the [Windows guide](windows/README.md) for
    extended display setup and command-line usage.
 
 Open the app on the device, then connect from the computer. The first Wi-Fi connection shows the
@@ -144,9 +142,9 @@ open "build/Use That Screen.app"
 Or use the command line:
 
 ```sh
-swift run anydisplay discover             # list devices on Wi-Fi and USB
-swift run anydisplay usb                  # connect over USB
-swift run anydisplay connect 192.168.1.20 # connect over Wi-Fi; the first time, compare the code
+swift run usethatscreen discover             # list devices on Wi-Fi and USB
+swift run usethatscreen usb                  # connect over USB
+swift run usethatscreen connect 192.168.1.20 # connect over Wi-Fi; the first time, compare the code
 ```
 
 Grant **Screen Recording** (for the display) and **Accessibility** (for touch, pen and keyboard)
@@ -161,9 +159,9 @@ extended display; without it, Use That Screen mirrors a monitor.
 ```powershell
 cd windows
 cargo build --release
-target\release\anydisplay-gui.exe         # system tray GUI app
-target\release\anydisplay-win.exe list    # or use the CLI
-target\release\anydisplay-win.exe usb
+target\release\usethatscreen-gui.exe         # system tray GUI app
+target\release\usethatscreen-win.exe list    # or use the CLI
+target\release\usethatscreen-win.exe usb
 ```
 
 See [`windows/README.md`](windows/README.md) for options and driver setup.
@@ -175,8 +173,8 @@ See [`windows/README.md`](windows/README.md) for options and driver setup.
 | [`android/`](android) | Client app | Kotlin, MediaCodec, Material 3 |
 | [`macos/`](macos) | Mac host: CLI and menu bar app | Swift, CGVirtualDisplay, ScreenCaptureKit, VideoToolbox |
 | [`windows/`](windows) | Windows host: CLI and GUI/tray app | Rust, egui, DXGI Desktop Duplication, Media Foundation, synthetic pointer input, WASAPI |
-| [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | AnyDisplay Protocol v1 | |
-| [`tools/anydisplay_ref.py`](tools/anydisplay_ref.py) | Reference host and client, test vector generator | Python, `cryptography`, ffmpeg |
+| [`docs/PROTOCOL.md`](docs/PROTOCOL.md) | Use That Screen Protocol v1 | |
+| [`tools/usethatscreen_ref.py`](tools/usethatscreen_ref.py) | Reference host and client, test vector generator | Python, `cryptography`, ffmpeg |
 
 ## Testing
 
@@ -186,15 +184,15 @@ See [`windows/README.md`](windows/README.md) for options and driver setup.
 (cd android && ./gradlew testDebugUnitTest)
 
 python3 -m venv tools/.venv && tools/.venv/bin/pip install cryptography
-tools/.venv/bin/python tools/anydisplay_ref.py vectors | diff - tools/vectors.json
+tools/.venv/bin/python tools/usethatscreen_ref.py vectors | diff - tools/vectors.json
 ```
 
 All three implementations check themselves against `tools/vectors.json`. The reference tool can
 also stand in for either side of a live session:
 
 ```sh
-tools/.venv/bin/python tools/anydisplay_ref.py host 127.0.0.1:47820   # streams an ffmpeg test pattern to a device
-tools/.venv/bin/python tools/anydisplay_ref.py client                 # acts as a device for a host under test
+tools/.venv/bin/python tools/usethatscreen_ref.py host 127.0.0.1:47820   # streams an ffmpeg test pattern to a device
+tools/.venv/bin/python tools/usethatscreen_ref.py client                 # acts as a device for a host under test
 ```
 
 ## Status
@@ -206,7 +204,7 @@ Use That Screen is young. What has been tested:
   verified against the reference implementation.
 - **Windows host:** a community report confirms USB connection, handshake and hardware HEVC
   streaming at 2200×1440 on a TCL NXTPAPER 11 Plus (Android 15). Other Windows features still
-  need device testing. See [PR #3](https://github.com/efekurucay/anydisplay/pull/3).
+  need device testing. See [PR #3](https://github.com/efekurucay/usethatscreen/pull/3).
 - **Pen input:** verified with on-device tests that use synthetic stylus events. It still needs a
   test with a real stylus device.
 - **USB accessory (AOAP) transport:** implemented but untested.
@@ -218,10 +216,10 @@ These are specific test reports, not a guarantee for every feature or device.
 | Android device | Host | Verified | Source |
 |---|---|---|---|
 | Huawei P30 Pro | MacBook Pro | USB and Wi-Fi video, pairing and touch; 60 fps at 2340×1080 | Maintainer testing; measurements above |
-| TCL NXTPAPER 11 Plus (9469X), Android 15 | Windows 11 | USB discovery with an empty serial, handshake, hardware HEVC stream at 2200×1440 | [@dionisvl, PR #3](https://github.com/efekurucay/anydisplay/pull/3) |
-| Xiaomi Redmi Note 12 Pro, Android 14 (HyperOS 2.0.16.0) | Mac mini M4, macOS Tahoe 26.6.2 (25G83) | USB and Wi-Fi connection at 1080×2400, with 56–60 fps over USB (ADB) and about 40–58 fps over Wi-Fi | [@motionkartik, issue #6](https://github.com/efekurucay/anydisplay/issues/6) |
+| TCL NXTPAPER 11 Plus (9469X), Android 15 | Windows 11 | USB discovery with an empty serial, handshake, hardware HEVC stream at 2200×1440 | [@dionisvl, PR #3](https://github.com/efekurucay/usethatscreen/pull/3) |
+| Xiaomi Redmi Note 12 Pro, Android 14 (HyperOS 2.0.16.0) | Mac mini M4, macOS Tahoe 26.6.2 (25G83) | USB and Wi-Fi connection at 1080×2400, with 56–60 fps over USB (ADB) and about 40–58 fps over Wi-Fi | [@motionkartik, issue #6](https://github.com/efekurucay/usethatscreen/issues/6) |
 
-Tried another device? [Send a device report](https://github.com/efekurucay/anydisplay/issues/new?template=device_report.yml).
+Tried another device? [Send a device report](https://github.com/efekurucay/usethatscreen/issues/new?template=device_report.yml).
 Real stylus pressure/tilt, Windows touch, audio and clipboard need more hardware reports.
 
 ## Roadmap

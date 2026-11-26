@@ -34,5 +34,5 @@ body:
     id: logs
     attributes:
       label: Logs
-      description: Host output with `-v`, and `adb logcat -s AnyDisplay` from the device.
+      description: Host output with `-v`, and `adb logcat -s UseThatScreen` from the device.
       render: text

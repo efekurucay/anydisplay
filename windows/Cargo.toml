@@ -1,21 +1,21 @@
 [package]
-name = "anydisplay-win"
-version = "0.1.8"
+name = "usethatscreen-win"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "Use That Screen Windows host: use an Android tablet as an extra display and pen tablet"
 rust-version = "1.82"
 
 [lib]
-name = "anydisplay"
+name = "usethatscreen"
 path = "src/lib.rs"
 
 [[bin]]
-name = "anydisplay-win"
+name = "usethatscreen-win"
 path = "src/main.rs"
 
 [[bin]]
-name = "anydisplay-gui"
+name = "usethatscreen-gui"
 path = "src/gui.rs"
 
 [dependencies]

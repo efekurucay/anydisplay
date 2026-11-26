@@ -72,7 +72,7 @@ pub fn with_parameter_sets(au: Vec<u8>, codec: Codec, sequence_header: &[u8]) ->
 }
 
 /// Splits an Annex-B byte stream into access units at access unit delimiters
-/// (the test source runs the encoder with AUDs on, like `anydisplay_ref.py host`).
+/// (the test source runs the encoder with AUDs on, like `usethatscreen_ref.py host`).
 pub struct AccessUnitSplitter {
     codec: Codec,
     buf: Vec<u8>,

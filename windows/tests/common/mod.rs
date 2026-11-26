@@ -1,13 +1,13 @@
-//! A minimal AnyDisplay client (PROTOCOL.md client role) and a fake platform for session tests.
+//! A minimal Use That Screen client (PROTOCOL.md client role) and a fake platform for session tests.
 
 #![allow(dead_code)]
 
-use anydisplay::platform::{
+use usethatscreen::platform::{
     EncodedFrame, FrameSink, OpenedStream, Platform, StreamRequest, VideoPipeline,
 };
-use anydisplay::proto::crypto::{self, KeyPair};
-use anydisplay::proto::frame::{encode_frame, read_frame};
-use anydisplay::proto::*;
+use usethatscreen::proto::crypto::{self, KeyPair};
+use usethatscreen::proto::frame::{encode_frame, read_frame};
+use usethatscreen::proto::*;
 use std::collections::HashMap;
 use std::io::Write;
 use std::net::{TcpListener, TcpStream};

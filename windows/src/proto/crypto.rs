@@ -59,7 +59,7 @@ impl KeyPair {
 
 /// The 6-digit numeric comparison code of mode 1.
 pub fn sas_code(transcript: &[u8; 32]) -> u32 {
-    let h = sha256(&[b"anydisplay/1 sas", transcript]);
+    let h = sha256(&[b"usethatscreen/1 sas", transcript]);
     u32::from_le_bytes([h[0], h[1], h[2], h[3]]) % 1_000_000
 }
 
@@ -86,7 +86,7 @@ pub fn key_schedule(z: &[u8; 32], psk: &[u8], transcript: &[u8; 32]) -> SessionK
     ikm.extend_from_slice(psk);
     let mut okm = [0u8; 96];
     Hkdf::<Sha256>::new(Some(transcript), &ikm)
-        .expand(b"anydisplay/1 keys", &mut okm)
+        .expand(b"usethatscreen/1 keys", &mut okm)
         .expect("96 bytes is a valid HKDF-SHA256 length");
     SessionKeys {
         k_h2c: okm[0..32].try_into().unwrap(),

@@ -20,6 +20,6 @@
         android:background="@drawable/bg_code"
         android:gravity="center"
         android:paddingVertical="16dp"
-        android:textAppearance="@style/TextAppearance.AnyDisplay.Code"
+        android:textAppearance="@style/TextAppearance.UseThatScreen.Code"
         android:textColor="?attr/colorOnPrimaryContainer" />
 </LinearLayout>

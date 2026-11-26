@@ -91,7 +91,7 @@
       >
       <nav aria-label="Main navigation">
         <a href="../#guides">All guides</a><a href="../#download">Downloads</a
-        ><a class="github-link" href="https://github.com/efekurucay/anydisplay"
+        ><a class="github-link" href="https://github.com/efekurucay/usethatscreen"
           >GitHub ↗</a
         >
       </nav>
@@ -151,9 +151,9 @@
             <p>
               Install the APK on Android and leave Use That Screen open. Extract the
               Windows ZIP, then open PowerShell in the folder that contains
-              <code>anydisplay-win.exe</code>.
+              <code>usethatscreen-win.exe</code>.
             </p>
-            <pre><code>.\anydisplay-win.exe list</code></pre>
+            <pre><code>.\usethatscreen-win.exe list</code></pre>
             <p>
               The list command reports available monitors, USB devices, Wi-Fi
               clients and stored pairings. The Windows host currently uses the
@@ -175,12 +175,12 @@
               prompt.
             </p>
             <pre><code>adb devices -l
-.\anydisplay-win.exe usb</code></pre>
+.\usethatscreen-win.exe usb</code></pre>
             <p>
               The adb device state must be <code>device</code>. If several
               devices are attached, provide the serial shown by adb:
             </p>
-            <pre><code>.\anydisplay-win.exe usb YOUR_DEVICE_SERIAL</code></pre>
+            <pre><code>.\usethatscreen-win.exe usb YOUR_DEVICE_SERIAL</code></pre>
             <p>
               Devices with an empty serial are supported starting with v0.1.1.
               For a device listed as <code>(no serial number)</code>, leave only
@@ -192,7 +192,7 @@
               Put the PC and Android device on the same local network. Replace
               the example IP with the one shown by the Android app:
             </p>
-            <pre><code>.\anydisplay-win.exe connect 192.168.1.20</code></pre>
+            <pre><code>.\usethatscreen-win.exe connect 192.168.1.20</code></pre>
             <p>
               Compare the pairing code on both screens, confirm in the terminal
               and accept it on Android. If a connection fails, check firewall
@@ -214,7 +214,7 @@
               >. It is a separate project, not bundled with Use That Screen. Follow
               the
               <a
-                href="https://github.com/efekurucay/anydisplay/blob/main/windows/README.md#extra-monitor-virtual-display-driver-setup"
+                href="https://github.com/efekurucay/usethatscreen/blob/main/windows/README.md#extra-monitor-virtual-display-driver-setup"
                 >driver setup instructions</a
               >
               and configure a mode matching the tablet’s resolution.
@@ -259,7 +259,7 @@
                 Windows restricts input from a normal process into administrator
                 windows. See the
                 <a
-                  href="https://github.com/efekurucay/anydisplay/blob/main/windows/README.md#running-as-administrator"
+                  href="https://github.com/efekurucay/usethatscreen/blob/main/windows/README.md#running-as-administrator"
                   >host documentation</a
                 >
                 before changing how you run it.
@@ -277,7 +277,7 @@
             </p>
             <p>
               <a
-                href="https://github.com/efekurucay/anydisplay/issues/new?template=device_report.yml"
+                href="https://github.com/efekurucay/usethatscreen/issues/new?template=device_report.yml"
                 >Send a device report</a
               >, or compare
               <a href="../android-second-monitor-apps/"
@@ -319,8 +319,8 @@
       >
       <p>Made by <a href="https://efekurucay.com">Yahya Efe Kuruçay</a>.</p>
       <div>
-        <a href="https://github.com/efekurucay/anydisplay">Source ↗</a
-        ><a href="https://github.com/efekurucay/anydisplay/blob/main/LICENSE"
+        <a href="https://github.com/efekurucay/usethatscreen">Source ↗</a
+        ><a href="https://github.com/efekurucay/usethatscreen/blob/main/LICENSE"
           >MIT license ↗</a
         >
       </div>

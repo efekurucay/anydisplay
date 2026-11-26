@@ -23,7 +23,7 @@ impl Clipboard {
             CreateWindowExW(
                 WINDOW_EX_STYLE(0),
                 w!("STATIC"),
-                w!("AnyDisplay clipboard"),
+                w!("UseThatScreen clipboard"),
                 WINDOW_STYLE(0),
                 0,
                 0,

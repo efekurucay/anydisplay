@@ -1,9 +1,10 @@
 # Your first Use That Screen connection
 
-Install [AnyDisplay.apk](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay.apk)
+Install [UseThatScreen.apk](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk)
 on an Android 8.0+ phone or tablet, and download the host for your computer from
-[the latest release](https://github.com/efekurucay/anydisplay/releases/latest).
-Open the Android app and leave it on screen while connecting.
+[the latest release](https://github.com/efekurucay/usethatscreen/releases/latest).
+Install a matching release on both devices. Open the Android app and leave it on screen while
+connecting.
 
 ## Mac: macOS 14 or later
 
@@ -20,15 +21,15 @@ Open the Android app and leave it on screen while connecting.
 ## Windows: Windows 10 (1809) or Windows 11
 
 Run the Windows installer and open **Use That Screen** from the Start menu. With the portable ZIP,
-extract the files and open `anydisplay-gui.exe`.
+extract the files and open `usethatscreen-gui.exe`.
 
 To connect from the command line, open a terminal in the folder containing the executable:
 
 ```powershell
-.\anydisplay-win.exe list
-.\anydisplay-win.exe usb
+.\usethatscreen-win.exe list
+.\usethatscreen-win.exe usb
 # Or, for Wi-Fi:
-.\anydisplay-win.exe connect 192.168.1.20
+.\usethatscreen-win.exe connect 192.168.1.20
 ```
 
 Replace the IP with the address shown by the Android app. Windows support is experimental.
@@ -39,7 +40,7 @@ It mirrors an existing monitor unless you install the optional
 
 1. Install [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools)
    on the computer. On macOS with Homebrew, `brew install --cask android-platform-tools` is another
-   option. Restart Use That Screen after installing it. For a custom location, set `ANYDISPLAY_ADB`
+   option. Restart Use That Screen after installing it. For a custom location, set `USETHATSCREEN_ADB`
    to the full executable path when launching the host from a terminal.
 2. If **Developer options** is hidden, find **Build number** in your phone's settings and tap it
    seven times. The [Android Developer options guide](https://developer.android.com/studio/debug/dev-options#enable)
@@ -90,7 +91,7 @@ The Android app listens on TCP port **47820**. No router port forwarding is need
 
 Try Wi-Fi on the same PC and Android device. If it shows video, use it while diagnosing USB.
 Record `adb version` and the `usb_backend` field from `adb server-status`, then retry USB
-with `anydisplay-win.exe usb -v` and collect `adb logcat -s AnyDisplay`.
+with `usethatscreen-win.exe usb -v` and collect `adb logcat -s UseThatScreen`.
 
 If `adb server-status` shows `LIBADBUSB`, compare with the alternate Windows USB backend
 documented in the [Platform-Tools release notes](https://developer.android.com/tools/releases/platform-tools#37.0.1_(july_2026)).
@@ -101,13 +102,13 @@ adb kill-server
 $env:ADB_USB_LEGACY = '1'
 adb start-server
 adb server-status
-.\anydisplay-win.exe usb -v
+.\usethatscreen-win.exe usb -v
 ```
 
 To restore the default backend, stop Use That Screen, run `adb kill-server`, remove the override with
 `Remove-Item Env:ADB_USB_LEGACY`, and run `adb start-server` again.
 
-Still stuck? [Report the issue](https://github.com/efekurucay/anydisplay/issues/new?template=bug_report.yml)
+Still stuck? [Report the issue](https://github.com/efekurucay/usethatscreen/issues/new?template=bug_report.yml)
 with your host OS, Android model/version, connection type and error text. Never include pairing
-secrets or signing keys. Successful [device reports](https://github.com/efekurucay/anydisplay/issues/new?template=device_report.yml)
+secrets or signing keys. Successful [device reports](https://github.com/efekurucay/usethatscreen/issues/new?template=device_report.yml)
 are welcome too.
