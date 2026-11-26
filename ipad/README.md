@@ -27,3 +27,19 @@ local-network access when iPadOS asks.
 For a simulator video check, keep the app open and run the
 [reference host](../tools/usethatscreen_ref.py) against `127.0.0.1:47820` with
 Python, `cryptography`, and `ffmpeg` installed.
+
+## Test on a physical iPad
+
+1. Install the iPad app from Xcode and put the iPad and computer on the same Wi-Fi.
+2. Select **Mirror** on the iPad. Confirm that the computer lists the iPad under
+   **Wi-Fi**, then select it and compare the six-digit code on both devices.
+3. Move a window on the computer and check that the iPad updates. Rotate the
+   iPad and check that the picture still fits.
+4. Disconnect and reconnect. Check that the same computer connects without a new code.
+5. Disconnect, select **Extend**, and reconnect. Arrange the displays on the
+   computer, then drag a window onto the iPad display. On Windows, install
+   the virtual display driver first.
+
+[Report the result on GitHub](https://github.com/efekurucay/usethatscreen/issues/new?title=%5BiPad%5D%20Device%20test).
+Include the iPad model, iPadOS version, computer OS and host build, iPad build
+commit, and the first step that failed or passed.
