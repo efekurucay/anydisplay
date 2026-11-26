@@ -29,6 +29,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: com.usethatscreen.ipad
         TARGETED_DEVICE_FAMILY: 2
         SWIFT_VERSION: "5.0"

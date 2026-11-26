@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/logo.svg" alt="Use That Screen logo" width="140">
+<img src="docs/assets/logo.png" alt="Use That Screen logo" width="140">
 
 # Use That Screen
 

@@ -21,6 +21,8 @@ final class AppController: NSObject, NSMenuDelegate {
     private let adb = Adb()
     private var usbMonitor: UsbMonitor?
     private var statusItem: NSStatusItem!
+    private lazy var appIcon = Bundle.main.url(forResource: "AppIcon", withExtension: "icns")
+        .flatMap { NSImage(contentsOf: $0) }
     private var networkDevices: [NetworkDevice] = []
     private var usbDevices: [UsbDevice] = []
     /// Keyed by "usb:<serial>", "net:<service name>" or "ip:<host:port>".
@@ -38,7 +40,7 @@ final class AppController: NSObject, NSMenuDelegate {
 
     func start() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: "Use That Screen")
+        refreshIcon()
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -147,8 +149,24 @@ final class AppController: NSObject, NSMenuDelegate {
 
     private func refreshIcon() {
         let streaming = sessions.values.contains { if case .streaming = $0.state { return true } else { return false } }
-        statusItem.button?.image = NSImage(systemSymbolName: streaming ? "rectangle.on.rectangle.circle.fill" : "rectangle.on.rectangle",
-                                           accessibilityDescription: "Use That Screen")
+        guard let appIcon else {
+            statusItem.button?.image = NSImage(
+                systemSymbolName: streaming ? "rectangle.on.rectangle.circle.fill" : "rectangle.on.rectangle",
+                accessibilityDescription: "Use That Screen")
+            return
+        }
+        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { bounds in
+            appIcon.draw(in: bounds)
+            if streaming {
+                NSColor.windowBackgroundColor.setFill()
+                NSBezierPath(ovalIn: NSRect(x: 11, y: 0, width: 7, height: 7)).fill()
+                NSColor.systemGreen.setFill()
+                NSBezierPath(ovalIn: NSRect(x: 12, y: 1, width: 5, height: 5)).fill()
+            }
+            return true
+        }
+        image.accessibilityDescription = "Use That Screen"
+        statusItem.button?.image = image
     }
 
     // MARK: - Menu

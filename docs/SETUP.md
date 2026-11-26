@@ -11,7 +11,7 @@ connecting.
 1. Unzip the download and move **Use That Screen.app** into Applications.
 2. Open it. The app is not notarized yet. If macOS blocks it, open **System Settings → Privacy &
    Security → Open Anyway** after the first launch attempt. Only bypass this for a download you trust.
-3. Look for the overlapping screens icon in the **menu bar**; there is no main window or Dock icon.
+3. Look for the green Use That Screen icon in the **menu bar**; there is no main window or Dock icon.
 4. Use **Allow Screen Recording…** and **Allow Accessibility…** in its menu when shown.
    Screen Recording enables video; Accessibility enables touch, pen and keyboard input.
    Restart Use That Screen after changing permissions if macOS asks.
@@ -79,7 +79,7 @@ The Android app listens on TCP port **47820**. No router port forwarding is need
 
 | Symptom | What to check |
 |---|---|
-| Mac app seems to do nothing | Find the overlapping screens icon in the menu bar. |
+| Mac app seems to do nothing | Find the green Use That Screen icon in the menu bar. |
 | `adb not found` | Install Platform-Tools, check `adb version`, and restart Use That Screen. |
 | No USB device | Try a data cable, unlock Android, enable debugging and run `adb devices -l`. |
 | `unauthorized` | Accept Android's computer authorization prompt. Reconnect the cable if needed. |

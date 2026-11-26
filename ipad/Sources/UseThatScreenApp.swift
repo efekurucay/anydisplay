@@ -74,9 +74,11 @@ private struct ContentView: View {
 
     private var home: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Image(systemName: "rectangle.on.rectangle")
-                .font(.title)
-                .foregroundStyle(.tint)
+            Image("BrandLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 52, height: 52)
+                .accessibilityHidden(true)
             Text("Use That Screen")
                 .font(.largeTitle.weight(.bold))
             VStack(alignment: .leading, spacing: 8) {
