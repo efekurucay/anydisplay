@@ -1,9 +1,9 @@
 [package]
 name = "anydisplay-win"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 license = "MIT"
-description = "AnyDisplay Windows host: use an Android tablet as an extra display and pen tablet"
+description = "Use That Screen Windows host: use an Android tablet as an extra display and pen tablet"
 rust-version = "1.82"
 
 [lib]

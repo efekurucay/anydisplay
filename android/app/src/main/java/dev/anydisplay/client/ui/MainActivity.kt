@@ -96,7 +96,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun copy(text: String) {
-        (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("AnyDisplay", text))
+        (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), text))
         Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
     }
 

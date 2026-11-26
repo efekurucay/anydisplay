@@ -1,6 +1,6 @@
-# AnyDisplay for Windows
+# Use That Screen for Windows
 
-The Windows host of AnyDisplay. An Android tablet running the AnyDisplay client becomes an extra monitor
+The Windows host of Use That Screen. An Android tablet running the Use That Screen client becomes an extra monitor
 and pen tablet for a Windows PC. It speaks `docs/PROTOCOL.md` (version 1) and interoperates with
 `tools/anydisplay_ref.py` and the macOS host.
 
@@ -108,7 +108,7 @@ Environment variables:
 
 ## Extra monitor: Virtual Display Driver setup
 
-Windows only adds a monitor when a display driver provides one. AnyDisplay does not ship a driver. It
+Windows only adds a monitor when a display driver provides one. Use That Screen does not ship a driver. It
 uses the open-source, MIT-licensed Virtual Display Driver (an IddCx driver by VirtualDrivers /
 MikeTheTech) when that driver is installed.
 

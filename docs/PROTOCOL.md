@@ -1,6 +1,6 @@
 # AnyDisplay Protocol, version 1
 
-AnyDisplay turns an Android device into an extra display and pen tablet for a desktop
+Use That Screen turns an Android device into an extra display and pen tablet for a desktop
 computer. Two roles exist:
 
 - **Client**: the Android device. It listens for TCP connections, decodes video,

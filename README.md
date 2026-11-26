@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/assets/logo.svg" alt="AnyDisplay logo" width="140">
+<img src="docs/assets/logo.svg" alt="Use That Screen logo" width="140">
 
-# AnyDisplay
+# Use That Screen
 
 **Turn any Android phone or tablet into a second monitor, touch screen and pen tablet for your Mac or Windows PC.**
 
@@ -15,7 +15,7 @@ USB or Wi-Fi · hardware H.264 / HEVC · pressure-sensitive pen · encrypted pai
 ![macOS 14+](https://img.shields.io/badge/host-macOS%2014%2B-000000?logo=apple&logoColor=white)
 ![Windows 10/11](https://img.shields.io/badge/host-Windows%2010%2F11-0078D4?logo=windows&logoColor=white)
 
-<img src="docs/assets/streaming.jpg" alt="AnyDisplay streaming at 56 fps with 6.8 ms decode time and the floating toolbar open" width="760">
+<img src="docs/assets/streaming.jpg" alt="Use That Screen streaming at 56 fps with 6.8 ms decode time and the floating toolbar open" width="760">
 
 </div>
 
@@ -23,15 +23,15 @@ USB or Wi-Fi · hardware H.264 / HEVC · pressure-sensitive pen · encrypted pai
 
 Closed-source apps such as SuperDisplay, Duet Display and spacedesk already turn a tablet into a
 second screen. Most of them support only one desktop OS and keep their protocol private.
-AnyDisplay is a free, MIT-licensed alternative:
+Use That Screen is a free, MIT-licensed alternative:
 
 - **One Android app** works with both a **Mac** and a **Windows PC**.
-- **A real extended display**, not a mirror. On macOS AnyDisplay creates a virtual monitor of the
+- **A real extended display**, not a mirror. On macOS Use That Screen creates a virtual monitor of the
   device's resolution, so you can drag windows onto it.
 - **[Open, documented protocol](docs/PROTOCOL.md)** with a Python reference implementation and
   test vectors, so anyone can write a client or a host for another platform.
 
-[**Website & setup guide →**](https://efekurucay.com/anydisplay/)
+[**Website & setup guide →**](https://usethatscreen.com/)
 
 ## Features
 
@@ -57,7 +57,7 @@ Measured on a Huawei P30 Pro (2340×1080, HiSilicon HEVC decoder) with a MacBook
 | USB (`adb forward`) | 60 fps | 0 | 5–7 ms | ~3 ms |
 | Wi-Fi, encrypted | 60 fps | 0 | 5–8 ms | 7–20 ms |
 
-<img src="docs/assets/app-home.jpg" alt="AnyDisplay Android app waiting for a computer" width="600">
+<img src="docs/assets/app-home.jpg" alt="Use That Screen Android app waiting for a computer" width="600">
 
 ## How it works
 
@@ -95,7 +95,7 @@ The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](doc
 |---|---|
 | [**AnyDisplay.apk**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay.apk) | The Android phone or tablet (Android 8.0+) |
 | [**AnyDisplay-macOS.zip**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
-| [**AnyDisplay Windows setup**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
+| [**Use That Screen Windows setup**](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/anydisplay/releases/latest/download/AnyDisplay-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
 
 These links always serve the newest version. Checksums and older versions are on the
 [releases page](https://github.com/efekurucay/anydisplay/releases).
@@ -106,11 +106,11 @@ on the computer and a data-capable USB cable.
 
 1. **Android:** open the APK on the device and allow installing from that source. For USB, also
    turn on **USB debugging** in the developer options.
-2. **Mac:** unzip and move **AnyDisplay.app** to Applications. The app is not notarized yet, so
+2. **Mac:** unzip and move **Use That Screen.app** to Applications. The app is not notarized yet, so
    macOS blocks the first launch: open it once, then choose *System Settings → Privacy & Security →
-   Open Anyway*. Or run `xattr -dr com.apple.quarantine /Applications/AnyDisplay.app`.
-   AnyDisplay lives in the menu bar.
-3. **Windows:** run the setup and open **AnyDisplay** from the Start menu. With the portable ZIP,
+   Open Anyway*. Or run `xattr -dr com.apple.quarantine "/Applications/Use That Screen.app"`.
+   Use That Screen lives in the menu bar.
+3. **Windows:** run the setup and open **Use That Screen** from the Start menu. With the portable ZIP,
    extract it and run `anydisplay-gui.exe`. See the [Windows guide](windows/README.md) for
    extended display setup and command-line usage.
 
@@ -129,7 +129,7 @@ cd android
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Open **AnyDisplay** on the device. For USB, enable **USB debugging** in the developer options.
+Open **Use That Screen** on the device. For USB, enable **USB debugging** in the developer options.
 
 ### 2a. Mac host
 
@@ -137,8 +137,8 @@ Requires macOS 14 or newer and Swift 6.
 
 ```sh
 cd macos
-scripts/bundle.sh                         # builds build/AnyDisplay.app, a menu bar app
-open build/AnyDisplay.app
+scripts/bundle.sh                         # builds build/Use That Screen.app, a menu bar app
+open "build/Use That Screen.app"
 ```
 
 Or use the command line:
@@ -156,7 +156,7 @@ in *System Settings → Privacy & Security* when asked.
 
 Requires Windows 10 (1809) or newer and Rust. Install the open-source
 [Virtual Display Driver](https://github.com/VirtualDrivers/Virtual-Display-Driver) to get an
-extended display; without it, AnyDisplay mirrors a monitor.
+extended display; without it, Use That Screen mirrors a monitor.
 
 ```powershell
 cd windows
@@ -199,7 +199,7 @@ tools/.venv/bin/python tools/anydisplay_ref.py client                 # acts as 
 
 ## Status
 
-AnyDisplay is young. What has been tested:
+Use That Screen is young. What has been tested:
 
 - **Android client ↔ Mac host:** tested end to end on real hardware (Huawei P30 Pro, MacBook Pro)
   over USB and Wi-Fi: pairing, encryption, video and touch. Audio, cursor and clipboard were each

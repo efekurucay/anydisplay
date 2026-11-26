@@ -1,6 +1,6 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
-//! `anydisplay-gui`: Windows system-tray and egui host for AnyDisplay.
+//! `anydisplay-gui`: Windows system-tray and egui host for Use That Screen.
 
 #[cfg(not(windows))]
 fn main() {
@@ -37,7 +37,8 @@ mod app {
         Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent,
     };
 
-    const SETUP_URL: &str = "https://efekurucay.com/anydisplay/#setup";
+    const APP_NAME: &str = "Use That Screen";
+    const SETUP_URL: &str = "https://usethatscreen.com/#setup";
     const VDD_URL: &str = "https://github.com/VirtualDrivers/Virtual-Display-Driver/releases";
 
     enum Endpoint {
@@ -45,7 +46,7 @@ mod app {
         Incoming(TcpStream),
     }
 
-    /// Design tokens aligned with the AnyDisplay website (warm cream / organic ink / burnt orange
+    /// Design tokens aligned with the Use That Screen website (warm cream / organic ink / burnt orange
     /// / soft lime in light mode, plus a matching dark variant).
     #[derive(Clone, Copy)]
     struct Palette {
@@ -241,7 +242,7 @@ mod app {
         };
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_title("AnyDisplay")
+                .with_title(APP_NAME)
                 .with_inner_size([480.0, 740.0])
                 .with_min_inner_size([430.0, 540.0])
                 .with_icon(viewport_icon),
@@ -307,7 +308,7 @@ mod app {
                 .map(|store| store.connections().to_vec())
                 .unwrap_or_default();
 
-            info!("AnyDisplay GUI started");
+            info!("Use That Screen GUI started");
 
             Self {
                 ctx: cc.egui_ctx.clone(),
@@ -375,9 +376,9 @@ mod app {
                     let _ = tray.set_icon(Some(icon));
                 }
                 let tip = if streaming {
-                    "AnyDisplay — Streaming"
+                    "Use That Screen — Streaming"
                 } else {
-                    "AnyDisplay"
+                    APP_NAME
                 };
                 let _ = tray.set_tooltip(Some(tip));
             }
@@ -715,7 +716,7 @@ mod app {
     impl eframe::App for AnyDisplayApp {
         fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
             if self.hwnd.load(Ordering::Relaxed) == 0 {
-                if let Some(h) = find_own_window("AnyDisplay") {
+                if let Some(h) = find_own_window(APP_NAME) {
                     self.hwnd.store(h, Ordering::Relaxed);
                 }
             }
@@ -755,7 +756,7 @@ mod app {
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.label(
-                            RichText::new("AnyDisplay")
+                            RichText::new(APP_NAME)
                                 .family(display_font())
                                 .size(19.5)
                                 .color(p.ink),
@@ -824,7 +825,7 @@ mod app {
                                 self.begin_quit();
                             }
                             if outline_button_sm(ui, "Hide to Tray", p)
-                                .on_hover_text("Keep AnyDisplay running in the system tray")
+                                .on_hover_text("Keep Use That Screen running in the system tray")
                                 .clicked()
                             {
                                 self.hide_to_tray();
@@ -1634,8 +1635,8 @@ mod app {
 
     fn build_tray_icon() -> (Option<TrayIcon>, MenuId, MenuId) {
         let menu = Menu::new();
-        let show_item = MenuItem::new("Show AnyDisplay", true, None);
-        let quit_item = MenuItem::new("Quit AnyDisplay", true, None);
+        let show_item = MenuItem::new("Show Use That Screen", true, None);
+        let quit_item = MenuItem::new("Quit Use That Screen", true, None);
         let show_id = show_item.id().clone();
         let quit_id = quit_item.id().clone();
         let _ = menu.append(&show_item);
@@ -1646,7 +1647,7 @@ mod app {
         let tray = Icon::from_rgba(rgba, w, h).ok().and_then(|icon| {
             TrayIconBuilder::new()
                 .with_menu(Box::new(menu))
-                .with_tooltip("AnyDisplay")
+                .with_tooltip(APP_NAME)
                 .with_icon(icon)
                 .build()
                 .ok()
@@ -1786,7 +1787,7 @@ mod app {
         }
     }
 
-    /// Returns the 32×32 official AnyDisplay logo RGBA (with a green live dot when streaming).
+    /// Returns the 32×32 app logo RGBA (with a green live dot when streaming).
     fn make_icon_rgba(streaming: bool) -> (Vec<u8>, u32, u32) {
         const W: u32 = 32;
         const H: u32 = 32;
@@ -1843,7 +1844,7 @@ mod app {
         std::env::var("COMPUTERNAME")
             .ok()
             .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "AnyDisplay host".into())
+            .unwrap_or_else(|| "Use That Screen host".into())
     }
 
     fn open_url(url: &str) {

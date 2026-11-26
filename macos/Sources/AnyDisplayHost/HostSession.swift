@@ -441,10 +441,10 @@ public final class HostSession {
         }
 
         if !CGPreflightScreenCaptureAccess() {
-            noticeOnce(.capturePermissionMissing, "Allow Screen Recording for AnyDisplay in System Settings > Privacy & Security")
+            noticeOnce(.capturePermissionMissing, "Allow Screen Recording for Use That Screen in System Settings > Privacy & Security")
         }
         if !AXIsProcessTrusted() {
-            noticeOnce(.inputPermissionMissing, "Allow Accessibility for AnyDisplay in System Settings > Privacy & Security to use touch, pen and keyboard")
+            noticeOnce(.inputPermissionMissing, "Allow Accessibility for Use That Screen in System Settings > Privacy & Security to use touch, pen and keyboard")
         }
 
         let cap = ScreenCapturer(
@@ -530,7 +530,7 @@ public final class HostSession {
         let deviceID = result?.deviceID ?? Data(count: 4)
         let base = deviceID.prefix(4).enumerated().reduce(UInt32(0)) { $0 | UInt32($1.element) << (8 * $1.offset) }
         let serial = base &+ UInt32(identity) &* 0x9E37_79B9
-        let name = "AnyDisplay \(result?.deviceName ?? "")".trimmingCharacters(in: .whitespaces)
+        let name = "Use That Screen \(result?.deviceName ?? "")".trimmingCharacters(in: .whitespaces)
         let maxPixels = max(edge, Int(max(info.screenW, info.screenH)))
         Log.debug("creating virtual display \(name) serial=\(serial) mm=\(Int(mmW))x\(Int(mmH)) max=\(maxPixels)")
         let vd = VirtualDisplay(name: name, serial: serial, sizeMillimeters: CGSize(width: mmW, height: mmH), maxPixels: maxPixels)

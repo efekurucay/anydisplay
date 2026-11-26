@@ -1,4 +1,4 @@
-//! `anydisplay-win`: command-line AnyDisplay host.
+//! `anydisplay-win`: command-line Use That Screen host.
 
 use anyhow::{anyhow, bail};
 use anydisplay::adb::Adb;
@@ -87,7 +87,7 @@ fn host_name() -> String {
         .ok()
         .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
         .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "AnyDisplay host".into())
+        .unwrap_or_else(|| "Use That Screen host".into())
 }
 
 fn make_platform(o: &Opts) -> anyhow::Result<Box<dyn Platform>> {

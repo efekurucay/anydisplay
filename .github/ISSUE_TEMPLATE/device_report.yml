@@ -1,5 +1,5 @@
 name: Device report
-description: Tell us how AnyDisplay works on your hardware, good or bad
+description: Tell us how Use That Screen works on your hardware, good or bad
 labels: [device-report]
 body:
   - type: input

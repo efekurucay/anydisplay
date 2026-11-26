@@ -1,4 +1,4 @@
-# Contributing to AnyDisplay
+# Contributing to Use That Screen
 
 Thanks for helping. Bug reports, device test results and pull requests are all useful.
 

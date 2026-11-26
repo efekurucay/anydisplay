@@ -82,7 +82,7 @@ pub struct SessionConfig {
 impl Default for SessionConfig {
     fn default() -> Self {
         SessionConfig {
-            host_name: "AnyDisplay host".into(),
+            host_name: "Use That Screen host".into(),
             auto_confirm: false,
             codec: None,
             clipboard: true,

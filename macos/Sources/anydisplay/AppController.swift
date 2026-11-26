@@ -35,7 +35,7 @@ final class AppController: NSObject, NSMenuDelegate {
 
     func start() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: "AnyDisplay")
+        statusItem.button?.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: "Use That Screen")
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -61,7 +61,7 @@ final class AppController: NSObject, NSMenuDelegate {
             src.resume()
             signalSources.append(src)
         }
-        Log.info("AnyDisplay host running; adb: \(adb?.path ?? "not found")")
+        Log.info("Use That Screen host running; adb: \(adb?.path ?? "not found")")
     }
 
     // MARK: - Connecting
@@ -139,7 +139,7 @@ final class AppController: NSObject, NSMenuDelegate {
     private func refreshIcon() {
         let streaming = sessions.values.contains { if case .streaming = $0.state { return true } else { return false } }
         statusItem.button?.image = NSImage(systemSymbolName: streaming ? "rectangle.on.rectangle.circle.fill" : "rectangle.on.rectangle",
-                                           accessibilityDescription: "AnyDisplay")
+                                           accessibilityDescription: "Use That Screen")
     }
 
     // MARK: - Menu
@@ -230,9 +230,9 @@ final class AppController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(action("Setup & Troubleshooting…") {
-            NSWorkspace.shared.open(URL(string: "https://efekurucay.com/anydisplay/#setup")!)
+            NSWorkspace.shared.open(URL(string: "https://usethatscreen.com/#setup")!)
         })
-        menu.addItem(action("Quit AnyDisplay") { [weak self] in self?.quit() })
+        menu.addItem(action("Quit Use That Screen") { [weak self] in self?.quit() })
     }
 
     private func describe(_ s: SessionState) -> String {
@@ -249,7 +249,7 @@ final class AppController: NSObject, NSMenuDelegate {
     private func askAddress() {
         let alert = NSAlert()
         alert.messageText = "Connect to Address"
-        alert.informativeText = "IP address or host name of the device running AnyDisplay (port 47820 unless given)."
+        alert.informativeText = "IP address or host name of the device running Use That Screen (port 47820 unless given)."
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
         field.placeholderString = "192.168.1.20"
         alert.accessoryView = field

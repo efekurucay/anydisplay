@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import dev.anydisplay.client.Elog
+import dev.anydisplay.client.R
 import dev.anydisplay.client.audio.AudioPlayer
 import dev.anydisplay.client.data.Identity
 import dev.anydisplay.client.data.PairedHosts
@@ -234,7 +235,7 @@ class Session(
                     Elog.i("clipboard from host: ${text.length} chars")
                     main.post {
                         val cm = app.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        cm.setPrimaryClip(ClipData.newPlainText("AnyDisplay", text))
+                        cm.setPrimaryClip(ClipData.newPlainText(app.getString(R.string.app_name), text))
                     }
                 }
             }

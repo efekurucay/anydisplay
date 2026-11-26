@@ -21,11 +21,11 @@ ANYDISPLAY_VERSION="$VERSION" macos/scripts/bundle.sh
 
 OUT="$(mktemp -d)"
 cp android/app/build/outputs/apk/release/app-release.apk "$OUT/AnyDisplay-$TAG.apk"
-(cd macos/build && ditto -c -k --keepParent AnyDisplay.app "$OUT/AnyDisplay-$TAG-macOS.zip")
+(cd macos/build && ditto -c -k --keepParent "Use That Screen.app" "$OUT/AnyDisplay-$TAG-macOS.zip")
 cd "$OUT"
 shasum -a 256 "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" > SHA256SUMS.txt
 cp "AnyDisplay-$TAG.apk" AnyDisplay.apk
 cp "AnyDisplay-$TAG-macOS.zip" AnyDisplay-macOS.zip
 
-gh release create "$TAG" --repo "$REPO" --title "AnyDisplay $TAG" --notes-file "$NOTES" --latest \
+gh release create "$TAG" --repo "$REPO" --title "Use That Screen $TAG" --notes-file "$NOTES" --latest \
     "AnyDisplay-$TAG.apk" "AnyDisplay-$TAG-macOS.zip" SHA256SUMS.txt AnyDisplay.apk AnyDisplay-macOS.zip

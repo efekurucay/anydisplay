@@ -1,10 +1,10 @@
-; AnyDisplay Windows installer (Inno Setup 6)
+; Use That Screen Windows installer (Inno Setup 6)
 ; Build locally from windows\:
 ;   cargo build --release
 ;   iscc installer\anydisplay.iss
 
 #ifndef AppVersion
-  #define AppVersion "0.1.7"
+  #define AppVersion "0.1.8"
 #endif
 
 #ifndef OutputBaseFilename
@@ -13,15 +13,16 @@
 
 [Setup]
 AppId={{8E9D5C4A-3A7B-4F81-9E42-6D1C2B5A7E90}
-AppName=AnyDisplay
+AppName=Use That Screen
 AppVersion={#AppVersion}
-AppVerName=AnyDisplay {#AppVersion}
-AppPublisher=AnyDisplay
-AppPublisherURL=https://efekurucay.com/anydisplay/
+AppVerName=Use That Screen {#AppVersion}
+AppPublisher=Use That Screen
+AppPublisherURL=https://usethatscreen.com/
 AppSupportURL=https://github.com/efekurucay/anydisplay/issues
 AppUpdatesURL=https://github.com/efekurucay/anydisplay/releases
 DefaultDirName={autopf}\AnyDisplay
-DefaultGroupName=AnyDisplay
+DefaultGroupName=Use That Screen
+UsePreviousGroup=no
 DisableProgramGroupPage=yes
 AllowNoIcons=yes
 LicenseFile=..\..\LICENSE
@@ -30,7 +31,7 @@ OutputBaseFilename={#OutputBaseFilename}
 SetupIconFile=..\assets\app.ico
 WizardSmallImageFile=..\assets\wizard-small.bmp
 UninstallDisplayIcon={app}\anydisplay-gui.exe
-UninstallDisplayName=AnyDisplay
+UninstallDisplayName=Use That Screen
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -46,19 +47,19 @@ RestartApplications=no
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-WelcomeLabel2=This will install AnyDisplay on your PC so you can use any Android phone or tablet as a second monitor, touch screen, and pen tablet.%n%nFor extended display, follow the Virtual Display Driver setup in the AnyDisplay README. Setup can install the optional USB tools.
+WelcomeLabel2=This will install Use That Screen on your PC so you can use any Android phone or tablet as a second monitor, touch screen, and pen tablet.%n%nFor extended display, follow the Virtual Display Driver setup in the Use That Screen README. Setup can install the optional USB tools.
 WizardSelectTasks=Customize Your Setup
 SelectTasksDesc=Choose the extras you want to include.
 SelectTasksLabel2=Recommended options are already checked. Click Next when you're ready.
-FinishedHeadingLabel=AnyDisplay is ready!
-FinishedLabel=AnyDisplay has been installed on your computer.%n%nOpen AnyDisplay on your Android device to connect over Wi-Fi or USB.%n%nIf you added display resolutions, reload the driver or restart Windows to apply them.
+FinishedHeadingLabel=Use That Screen is ready!
+FinishedLabel=Use That Screen has been installed on your computer.%n%nOpen Use That Screen on your Android device to connect over Wi-Fi or USB.%n%nIf you added display resolutions, reload the driver or restart Windows to apply them.
 
 [Tasks]
 Name: "vddresolutions"; Description: "Add Android tablet && phone resolutions (driver reload required)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferVddResolutions
 Name: "installadb"; Description: "Enable USB cable connections (installs Android Platform-Tools / adb via winget)"; GroupDescription: "Display & USB setup:"; Check: ShouldOfferAdbInstall
-Name: "autostart"; Description: "Launch AnyDisplay automatically when Windows starts"; GroupDescription: "Shortcuts & startup:"; Flags: unchecked
+Name: "autostart"; Description: "Launch Use That Screen automatically when Windows starts"; GroupDescription: "Shortcuts & startup:"; Flags: unchecked
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts & startup:"; Flags: unchecked
-Name: "addtopath"; Description: "Use AnyDisplay from the command line (adds anydisplay-win to PATH)"; GroupDescription: "Developer tools:"
+Name: "addtopath"; Description: "Use Use That Screen from the command line (adds anydisplay-win to PATH)"; GroupDescription: "Developer tools:"
 
 [Files]
 Source: "..\target\release\anydisplay-gui.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -68,16 +69,22 @@ Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "add-vdd-resolutions.ps1"; DestDir: "{tmp}"; Flags: deleteafterinstall; Tasks: vddresolutions
 
 [Icons]
-Name: "{group}\AnyDisplay"; Filename: "{app}\anydisplay-gui.exe"; Comment: "Turn an Android phone or tablet into a second monitor"
-Name: "{group}\Uninstall AnyDisplay"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\AnyDisplay"; Filename: "{app}\anydisplay-gui.exe"; Tasks: desktopicon
+Name: "{group}\Use That Screen"; Filename: "{app}\anydisplay-gui.exe"; Comment: "Turn an Android phone or tablet into a second monitor"
+Name: "{group}\Uninstall Use That Screen"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Use That Screen"; Filename: "{app}\anydisplay-gui.exe"; Tasks: desktopicon
+
+[InstallDelete]
+Type: files; Name: "{autoprograms}\AnyDisplay\AnyDisplay.lnk"
+Type: files; Name: "{autoprograms}\AnyDisplay\Uninstall AnyDisplay.lnk"
+Type: dirifempty; Name: "{autoprograms}\AnyDisplay"
+Type: files; Name: "{autodesktop}\AnyDisplay.lnk"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AnyDisplay"; ValueData: """{app}\anydisplay-gui.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
 Filename: "{localappdata}\Microsoft\WindowsApps\winget.exe"; Parameters: "install --id=Google.PlatformTools -e --accept-source-agreements --accept-package-agreements"; StatusMsg: "Installing Android Platform-Tools (adb) via winget..."; Flags: waituntilterminated; Tasks: installadb
-Filename: "{app}\anydisplay-gui.exe"; Description: "{cm:LaunchProgram,AnyDisplay}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\anydisplay-gui.exe"; Description: "{cm:LaunchProgram,Use That Screen}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 Type: files; Name: "{userappdata}\AnyDisplay\host.json"; Check: not IsAdminInstallMode
