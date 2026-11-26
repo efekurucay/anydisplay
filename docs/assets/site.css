@@ -1105,9 +1105,10 @@ footer a {
   }
   .header {
     height: 80px;
+    column-gap: 14px;
   }
   .brand {
-    font-size: 22px;
+    font-size: clamp(18px, 5vw, 22px);
   }
   nav {
     gap: 16px;
