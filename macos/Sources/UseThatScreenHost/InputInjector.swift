@@ -175,8 +175,8 @@ public final class InputInjector {
     // MARK: - MOUSE
 
     private func onMouse(_ m: Mouse) {
+        guard m.button <= 4, let button = CGMouseButton(rawValue: UInt32(m.button)) else { return }
         let p = point(nx: m.x, ny: m.y)
-        let button: CGMouseButton = m.button == 1 ? .right : m.button == 2 ? .center : .left
         switch m.action {
         case 0: move(to: p)
         case 1: press(button, at: p)

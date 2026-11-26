@@ -35,6 +35,7 @@ class InputRouter(
             field = v
         }
     var palmRejection = true
+    var mouseSideButtons = false
     var streamWidth = 1
     var streamHeight = 1
 
@@ -45,6 +46,8 @@ class InputRouter(
     private val reported = LinkedHashMap<Int, IntArray>() // finger id -> last (x, y, pressure, size)
     private val lastPos = HashMap<Int, Pair<Float, Float>>()
     private var mouseButtons = 0
+    private var mouseX = 0
+    private var mouseY = 0
 
     val trackpadCursor get() = engine.cursorX to engine.cursorY
 
@@ -261,24 +264,34 @@ class InputRouter(
     private fun handleMouse(ev: MotionEvent) {
         val x = nx(ev.x)
         val y = ny(ev.y)
+        mouseX = x
+        mouseY = y
         when (ev.actionMasked) {
             MotionEvent.ACTION_HOVER_MOVE, MotionEvent.ACTION_MOVE -> send(Proto.MOUSE, Bodies.mouse(MouseAction.MOVE, MouseButton.LEFT, x, y))
             MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.ACTION_BUTTON_RELEASE, MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP -> {
-                val now = ev.buttonState
-                val changed = now xor mouseButtons
-                for ((bit, button) in MOUSE_BUTTONS) {
-                    if (changed and bit != 0) {
-                        send(Proto.MOUSE, Bodies.mouse(if (now and bit != 0) MouseAction.DOWN else MouseAction.UP, button, x, y))
-                    }
-                }
-                mouseButtons = now
+                val allowed = if (mouseSideButtons) -1 else SIDE_BUTTONS.inv()
+                updateMouseButtons(ev.buttonState and allowed)
             }
+            MotionEvent.ACTION_CANCEL -> cancelMouse()
             MotionEvent.ACTION_SCROLL -> {
                 val dx = (-ev.getAxisValue(MotionEvent.AXIS_HSCROLL) * WHEEL_PX).toInt()
                 val dy = (ev.getAxisValue(MotionEvent.AXIS_VSCROLL) * WHEEL_PX).toInt()
                 if (dx != 0 || dy != 0) send(Proto.SCROLL, Bodies.scroll(x, y, dx, dy, ScrollPhase.CHANGE))
             }
         }
+    }
+
+    fun cancelMouse() = updateMouseButtons(0)
+
+    private fun updateMouseButtons(now: Int) {
+        val changed = now xor mouseButtons
+        for ((bit, button) in MOUSE_BUTTONS) {
+            if (changed and bit != 0) {
+                val action = if (now and bit != 0) MouseAction.DOWN else MouseAction.UP
+                send(Proto.MOUSE, Bodies.mouse(action, button, mouseX, mouseY))
+            }
+        }
+        mouseButtons = now
     }
 
     // ------------------------------------------------------------ trackpad sink
@@ -294,10 +307,13 @@ class InputRouter(
     companion object {
         const val PALM_HOLD_MS = 300L
         private const val WHEEL_PX = 48f
+        private const val SIDE_BUTTONS = MotionEvent.BUTTON_BACK or MotionEvent.BUTTON_FORWARD
         private val MOUSE_BUTTONS = listOf(
             MotionEvent.BUTTON_PRIMARY to MouseButton.LEFT,
             MotionEvent.BUTTON_SECONDARY to MouseButton.RIGHT,
             MotionEvent.BUTTON_TERTIARY to MouseButton.MIDDLE,
+            MotionEvent.BUTTON_BACK to MouseButton.BACK,
+            MotionEvent.BUTTON_FORWARD to MouseButton.FORWARD,
         )
     }
 }

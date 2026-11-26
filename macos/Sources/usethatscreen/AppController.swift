@@ -4,6 +4,7 @@ import UseThatScreenHost
 import UseThatScreenProtocol
 import Foundation
 import Network
+import ScreenCaptureKit
 
 /// Menu bar app: lists Wi-Fi and USB clients, connects, shows the pairing code, and manages
 /// permissions and pairings.
@@ -27,6 +28,8 @@ final class AppController: NSObject, NSMenuDelegate {
     private var usbRetryAfter: [String: Date] = [:]
     private var pairingAlert: (key: String, alert: NSAlert)?
     private var signalSources: [DispatchSourceSignal] = []
+    private var sharedWindow: SCWindow?
+    private var choosingWindow = false
 
     private var autoConnectUSB: Bool {
         get { UserDefaults.standard.object(forKey: "autoConnectUSB") as? Bool ?? true }
@@ -67,14 +70,14 @@ final class AppController: NSObject, NSMenuDelegate {
     // MARK: - Connecting
 
     private func autoConnect() {
-        guard autoConnectUSB else { return }
+        guard autoConnectUSB, sharedWindow == nil, !choosingWindow else { return }
         for d in usbDevices where sessions["usb:\(d.serial)"] == nil {
             if let t = usbRetryAfter[d.serial], t > Date() { continue }
-            connectUSB(d)
+            connectUSB(d, automatic: true)
         }
     }
 
-    private func connectUSB(_ device: UsbDevice) {
+    private func connectUSB(_ device: UsbDevice, automatic: Bool = false) {
         guard let adb else { return }
         let key = "usb:\(device.serial)"
         guard sessions[key] == nil else { return }
@@ -84,17 +87,23 @@ final class AppController: NSObject, NSMenuDelegate {
                 return
             }
             DispatchQueue.main.async {
-                let ep = NWEndpoint.hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!)
-                self.begin(key: key, title: device.model ?? device.serial, endpoint: ep) {
+                let removeForward = {
                     DispatchQueue.global().async { adb.removeForward(serial: device.serial, localPort: port) }
                 }
+                guard self.sessions[key] == nil,
+                      !automatic || (self.autoConnectUSB && self.sharedWindow == nil && !self.choosingWindow) else {
+                    removeForward()
+                    return
+                }
+                let ep = NWEndpoint.hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!)
+                self.begin(key: key, title: device.model ?? device.serial, endpoint: ep, cleanup: removeForward)
             }
         }
     }
 
     private func begin(key: String, title: String, endpoint: NWEndpoint, cleanup: (() -> Void)? = nil) {
         guard sessions[key] == nil else { return }
-        let s = HostSession(endpoint: endpoint, store: store)
+        let s = HostSession(endpoint: endpoint, store: store, options: SessionOptions(window: sharedWindow))
         sessions[key] = Active(session: s, title: title, state: .connecting, cleanup: cleanup)
         s.onStateChange = { [weak self] state in self?.update(key: key, session: s, state: state) }
         s.onConfirmCode = { [weak self] code, reply in self?.confirm(key: key, code: code, reply: reply) }
@@ -191,12 +200,18 @@ final class AppController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
         menu.addItem(action("Connect to Address…") { [weak self] in self?.askAddress() })
+        menu.addItem(action("Share a Window…") { [weak self] in self?.chooseWindow() })
+        if let sharedWindow {
+            menu.addItem(disabled("Next connection: \(windowName(sharedWindow)) (view only)"))
+            menu.addItem(action("Use Desktop Mode for New Connections") { [weak self] in self?.sharedWindow = nil })
+        }
         let auto = action("Connect USB Devices Automatically") { [weak self] in
-            guard let self else { return }
+            guard let self, self.sharedWindow == nil else { return }
             self.autoConnectUSB.toggle()
             self.autoConnect()
         }
         auto.state = autoConnectUSB ? .on : .off
+        auto.isEnabled = sharedWindow == nil
         menu.addItem(auto)
 
         if !CGPreflightScreenCaptureAccess() || !AXIsProcessTrusted() {
@@ -241,8 +256,55 @@ final class AppController: NSObject, NSMenuDelegate {
         case .handshaking: return "authenticating"
         case .confirmingCode(let c): return "pairing code \(c)"
         case .streaming(let i):
-            return "\(i.width)×\(i.height) \(i.refreshHz) Hz \(i.codec == .hevc ? "HEVC" : "H.264")\(i.mirroring ? ", mirroring" : "")"
+            let mode = i.viewOnly ? ", window (view only)" : i.mirroring ? ", mirroring" : ""
+            return "\(i.width)×\(i.height) \(i.refreshHz) Hz \(i.codec == .hevc ? "HEVC" : "H.264")\(mode)"
         case .closed: return "closed"
+        }
+    }
+
+    private func windowName(_ window: SCWindow) -> String {
+        let app = window.owningApplication?.applicationName ?? "Window"
+        guard let title = window.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty else {
+            return app
+        }
+        return "\(app) — \(title)"
+    }
+
+    private func chooseWindow() {
+        guard !choosingWindow else { return }
+        guard CGPreflightScreenCaptureAccess() else {
+            _ = CGRequestScreenCaptureAccess()
+            return
+        }
+        choosingWindow = true
+        SCShareableContent.getExcludingDesktopWindows(true, onScreenWindowsOnly: true) { [weak self] content, error in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                defer { self.choosingWindow = false }
+                let windows = (content?.windows ?? []).filter {
+                    $0.windowLayer == 0 && $0.owningApplication != nil &&
+                        $0.owningApplication?.processID != ProcessInfo.processInfo.processIdentifier &&
+                        $0.frame.width >= 2 && $0.frame.height >= 2
+                }
+                let alert = NSAlert()
+                NSApp.activate(ignoringOtherApps: true)
+                guard !windows.isEmpty else {
+                    alert.messageText = "No Shareable Windows"
+                    alert.informativeText = error?.localizedDescription ?? "Open a window and try again."
+                    alert.runModal()
+                    return
+                }
+                let picker = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 360, height: 28), pullsDown: false)
+                picker.addItems(withTitles: windows.map(self.windowName))
+                alert.messageText = "Share a Window"
+                alert.informativeText = "New manual connections will show this window without controls, audio or clipboard. Existing connections keep their source."
+                alert.accessoryView = picker
+                alert.addButton(withTitle: "Select Window")
+                alert.addButton(withTitle: "Cancel")
+                if alert.runModal() == .alertFirstButtonReturn, windows.indices.contains(picker.indexOfSelectedItem) {
+                    self.sharedWindow = windows[picker.indexOfSelectedItem]
+                }
+            }
         }
     }
 

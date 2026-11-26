@@ -227,6 +227,7 @@ class Session(
                 SessionHub.notice(code, msg)
             }
             Proto.CLIPBOARD -> {
+                if (config?.viewOnly == true) return
                 val mime = r.str()
                 val data = r.blob()
                 if (mime == Proto.MIME_TEXT) {
@@ -333,7 +334,7 @@ class Session(
     }
 
     fun sendInput(type: Int, body: ByteArray) {
-        if (connected) send(Proto.CH_INPUT, type, body)
+        if (connected && config?.viewOnly != true) send(Proto.CH_INPUT, type, body)
     }
 
     fun sendConfigRequest() {
@@ -352,7 +353,7 @@ class Session(
     fun requestKeyframe() = send(Proto.CH_CONTROL, Proto.KEYFRAME_REQ)
 
     fun sendClipboard(text: String) {
-        if (!connected || text == lastClipboardFromHost) return
+        if (!connected || config?.viewOnly == true || text == lastClipboardFromHost) return
         lastClipboardFromHost = text
         send(Proto.CH_CONTROL, Proto.CLIPBOARD, Bodies.clipboard(Proto.MIME_TEXT, text.toByteArray(Charsets.UTF_8)))
     }

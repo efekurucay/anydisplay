@@ -91,7 +91,7 @@ impl Platform for WinPlatform {
     }
 
     fn host_caps(&self) -> u32 {
-        let mut caps = 0;
+        let mut caps = host_caps::MOUSE_SIDE_BUTTONS;
         if self.injector.has_touch() {
             caps |= host_caps::NATIVE_TOUCH;
         }

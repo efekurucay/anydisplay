@@ -164,7 +164,7 @@ new `CONFIG` with a new `stream_id` and starts the new stream with a keyframe.
 |------|-------------|------|------|
 | 0x10 | DEVICE_INFO | C→H  | `u16 screen_w`, `u16 screen_h` (current orientation, physical px), `f32 xdpi`, `f32 ydpi`, `f32 max_refresh`, `u32 codecs` (bit0 H.264, bit1 HEVC, bit2 AV1), `u16 max_decode_w`, `u16 max_decode_h`, `u8 max_touches`, `u32 pen_caps` (bit0 pressure, bit1 tilt, bit2 hover, bit3 eraser, bit4 barrel button), `u8 audio` (bit0 PCM s16le), `str model`, `str os_version` |
 | 0x11 | CONFIG_REQ  | C→H  | `u16 width`, `u16 height` (stream size; 0,0 = screen size), `u16 refresh_hz`, `u8 codec` (1 H.264, 2 HEVC, 3 AV1), `u32 bitrate_kbps` (0 = auto), `u8 quality` (1–100), `u8 flags` (bit0 hidpi, bit1 audio, bit2 client draws cursor, bit3 mirror main display instead of extending) |
-| 0x12 | CONFIG      | H→C  | `u32 stream_id`, `u16 width`, `u16 height`, `u16 refresh_hz`, `u8 codec`, `u32 bitrate_kbps`, `u8 flags` (same bits as request, as granted), `u16 logical_w`, `u16 logical_h` (desktop size in points on macOS, 96-DPI units on Windows), `u32 host_caps` (bit0 native touch, bit1 native pen, bit2 clipboard, bit3 audio) |
+| 0x12 | CONFIG      | H→C  | `u32 stream_id`, `u16 width`, `u16 height`, `u16 refresh_hz`, `u8 codec`, `u32 bitrate_kbps`, `u8 flags` (same bits as request, as granted), `u16 logical_w`, `u16 logical_h` (source size in points on macOS, 96-DPI units on Windows), `u32 host_caps` (bit0 native touch, bit1 native pen, bit2 clipboard, bit3 audio, bit4 mouse side buttons, bit5 view-only stream) |
 | 0x13 | PING        | both | `u32 seq`, `u64 sender_time_us` |
 | 0x14 | PONG        | both | `u32 seq`, `u64 echoed sender_time_us` |
 | 0x15 | STATS       | C→H  | `u32 frames_decoded`, `u32 frames_dropped`, `u32 avg_decode_us`, `u32 rtt_us`, `u32 bytes_received` (since previous STATS, sent every second) |
@@ -237,8 +237,11 @@ a degree.
 | 0x52 | KEY    | C→H | `u8 action` (0 up, 1 down), `u16 hid_usage` (USB HID keyboard page), `u16 modifiers` (bit0 ctrl, bit1 shift, bit2 alt, bit3 meta) |
 | 0x53 | TEXT   | C→H | `str text` (committed IME text, host types it as Unicode) |
 | 0x54 | SCROLL | C→H | `u16 x`, `u16 y`, `i16 dx`, `i16 dy` (stream pixels, positive = content moves right/down), `u8 phase` (0 begin, 1 change, 2 end, 3 momentum) |
-| 0x55 | MOUSE  | C→H | `u8 action` (0 move, 1 down, 2 up), `u8 button` (0 left, 1 right, 2 middle), `u16 x`, `u16 y` |
+| 0x55 | MOUSE  | C→H | `u8 action` (0 move, 1 down, 2 up), `u8 button` (0 left, 1 right, 2 middle, 3 back, 4 forward), `u16 x`, `u16 y` |
 
+- Send back and forward buttons only if the host advertises bit4 in `CONFIG.host_caps`.
+- With bit5 set, the host ignores input and sends neither audio nor clipboard. The client
+  leaves stream controls such as local zoom available and keeps input and clipboard local.
 - `KEY.modifiers` is the set of modifiers the user holds for this key. The host
   presses any of them that are not already down before the key and releases
   them after it.

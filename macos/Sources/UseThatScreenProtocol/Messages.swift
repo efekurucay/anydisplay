@@ -266,6 +266,8 @@ public struct HostCaps: OptionSet, Sendable {
     public static let nativePen = HostCaps(rawValue: 1 << 1)
     public static let clipboard = HostCaps(rawValue: 1 << 2)
     public static let audio = HostCaps(rawValue: 1 << 3)
+    public static let mouseSideButtons = HostCaps(rawValue: 1 << 4)
+    public static let viewOnly = HostCaps(rawValue: 1 << 5)
 }
 
 public struct Config: Message, Equatable {

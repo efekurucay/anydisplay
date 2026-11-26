@@ -112,7 +112,9 @@ impl Injector {
             self.send_key(k);
         }
         for b in std::mem::take(&mut self.mouse_buttons) {
-            self.send(&[mouse_input(0, 0, button_flags(b, false), 0)]);
+            if let Some(input) = mouse_button(b, false) {
+                self.send(&[input]);
+            }
         }
         self.scroll.reset();
     }
@@ -283,18 +285,21 @@ impl Injector {
     }
 
     fn mouse(&mut self, m: &Mouse, target: &InputTarget) {
+        if m.button > 4 {
+            return;
+        }
         let (ax, ay) = self.absolute(target, m.x, m.y);
         let move_flags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
         let mut inputs = vec![mouse_input(ax, ay, move_flags, 0)];
         match m.action {
             mouse_action::DOWN => {
-                inputs.push(mouse_input(0, 0, button_flags(m.button, true), 0));
+                inputs.extend(mouse_button(m.button, true));
                 if !self.mouse_buttons.contains(&m.button) {
                     self.mouse_buttons.push(m.button);
                 }
             }
             mouse_action::UP => {
-                inputs.push(mouse_input(0, 0, button_flags(m.button, false), 0));
+                inputs.extend(mouse_button(m.button, false));
                 self.mouse_buttons.retain(|&b| b != m.button);
             }
             _ => {}
@@ -359,13 +364,15 @@ fn mouse_input(dx: i32, dy: i32, flags: MOUSE_EVENT_FLAGS, data: u32) -> INPUT {
     }
 }
 
-fn button_flags(button: u8, down: bool) -> MOUSE_EVENT_FLAGS {
-    match (button, down) {
-        (1, true) => MOUSEEVENTF_RIGHTDOWN,
-        (1, false) => MOUSEEVENTF_RIGHTUP,
-        (2, true) => MOUSEEVENTF_MIDDLEDOWN,
-        (2, false) => MOUSEEVENTF_MIDDLEUP,
-        (_, true) => MOUSEEVENTF_LEFTDOWN,
-        (_, false) => MOUSEEVENTF_LEFTUP,
-    }
+fn mouse_button(button: u8, down: bool) -> Option<INPUT> {
+    let (press, release, data) = match button {
+        0 => (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, 0),
+        1 => (MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, 0),
+        2 => (MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, 0),
+        3 => (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON1),
+        4 => (MOUSEEVENTF_XDOWN, MOUSEEVENTF_XUP, XBUTTON2),
+        _ => return None,
+    };
+    let flags = if down { press } else { release };
+    Some(mouse_input(0, 0, flags, data.into()))
 }

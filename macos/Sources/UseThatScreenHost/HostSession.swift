@@ -5,16 +5,19 @@ import UseThatScreenProtocol
 import Foundation
 import Network
 import QuartzCore
+import ScreenCaptureKit
 import SystemConfiguration
 
 public struct SessionOptions {
     /// Accept the pairing code without asking (CLI `-y`, tests).
     public var autoConfirmSAS = false
     public var clipboard = true
+    public var window: SCWindow?
 
-    public init(autoConfirmSAS: Bool = false, clipboard: Bool = true) {
+    public init(autoConfirmSAS: Bool = false, clipboard: Bool = true, window: SCWindow? = nil) {
         self.autoConfirmSAS = autoConfirmSAS
         self.clipboard = clipboard
+        self.window = window
     }
 }
 
@@ -28,6 +31,7 @@ public struct StreamInfo: Sendable {
     public let bitrateKbps: Int
     public let hardwareEncoder: Bool
     public let mirroring: Bool
+    public let viewOnly: Bool
     public let logicalWidth: Int
     public let logicalHeight: Int
 }
@@ -254,7 +258,7 @@ public final class HostSession {
         case .video:
             if frame.type == MessageType.frameAck, let ack = try? FrameAck(body: frame.body) { onAck(ack) }
         case .input:
-            injector.handle(frame)
+            if options.window == nil { injector.handle(frame) }
         default:
             break
         }
@@ -367,7 +371,9 @@ public final class HostSession {
         if !canDecode(codec) { codec = canDecode(.h264) ? .h264 : .hevc }
 
         // Display: a virtual display unless mirroring was asked for or is the only option.
-        var mirror = requested.contains(.mirror)
+        let windowFilter = options.window.map { SCContentFilter(desktopIndependentWindow: $0) }
+        let viewOnly = windowFilter != nil
+        var mirror = viewOnly || requested.contains(.mirror)
         var displayID = CGMainDisplayID()
         var logical = CGSize(width: w, height: h)
         if !mirror {
@@ -384,17 +390,21 @@ public final class HostSession {
         if mirror {
             virtualDisplay = nil
             displayID = CGMainDisplayID()
-            let b = CGDisplayBounds(displayID)
+            let b = windowFilter?.contentRect ?? CGDisplayBounds(displayID)
+            guard b.width.isFinite, b.height.isFinite, b.width >= 1, b.height >= 1 else {
+                close(error: "Capture source has no usable size", bye: .error)
+                return
+            }
             logical = b.size
-            // Keep the main display's aspect ratio inside the requested size.
+            // Keep the source aspect ratio inside the requested size.
             let k = min(Double(w) / b.width, Double(h) / b.height)
             w = max(Int(b.width * k) & ~1, 2)
             h = max(Int(b.height * k) & ~1, 2)
             granted.insert(.mirror)
         }
-        let audio = requested.contains(.audio) && info.audio & 1 != 0
+        let audio = !viewOnly && requested.contains(.audio) && info.audio & 1 != 0
         if audio { granted.insert(.audio) }
-        if requested.contains(.clientCursor) { granted.insert(.clientCursor) }
+        if !viewOnly && requested.contains(.clientCursor) { granted.insert(.clientCursor) }
 
         teardownPipeline()
         streamID &+= 1
@@ -427,14 +437,15 @@ public final class HostSession {
         encoder = enc
         if !enc.isHardware { notice(.softwareEncoder, "Hardware \(codec == .hevc ? "HEVC" : "H.264") encoder unavailable; using software") }
 
-        var caps: HostCaps = [.nativePen]
-        if options.clipboard { caps.insert(.clipboard) }
+        var caps: HostCaps = viewOnly ? [.viewOnly] : [.nativePen, .mouseSideButtons]
+        if !viewOnly && options.clipboard { caps.insert(.clipboard) }
         if audio { caps.insert(.audio) }
         let config = Config(streamID: sid, width: UInt16(w), height: UInt16(h), refreshHz: UInt16(fps), codec: codec.rawValue,
                             bitrateKbps: UInt32(kbps), flags: granted.rawValue, logicalW: UInt16(logical.width),
                             logicalH: UInt16(logical.height), hostCaps: caps.rawValue)
         connection?.send(config)
-        Log.info("CONFIG stream=\(sid) \(w)x\(h)@\(fps) \(codec == .hevc ? "HEVC" : "H.264") \(kbps) kbps flags=0x\(String(granted.rawValue, radix: 16)) logical=\(Int(logical.width))x\(Int(logical.height)) display=\(displayID) hw=\(enc.isHardware)")
+        let sourceName = viewOnly ? "window" : "display \(displayID)"
+        Log.info("CONFIG stream=\(sid) \(w)x\(h)@\(fps) \(codec == .hevc ? "HEVC" : "H.264") \(kbps) kbps flags=0x\(String(granted.rawValue, radix: 16)) logical=\(Int(logical.width))x\(Int(logical.height)) source=\(sourceName) hw=\(enc.isHardware)")
         if audio {
             connection?.send(AudioConfig(sampleRate: UInt32(ScreenCapturer.audioSampleRate),
                                          channels: UInt8(ScreenCapturer.audioChannels), codec: 0))
@@ -443,13 +454,14 @@ public final class HostSession {
         if !CGPreflightScreenCaptureAccess() {
             noticeOnce(.capturePermissionMissing, "Allow Screen Recording for Use That Screen in System Settings > Privacy & Security")
         }
-        if !AXIsProcessTrusted() {
+        if !viewOnly && !AXIsProcessTrusted() {
             noticeOnce(.inputPermissionMissing, "Allow Accessibility for Use That Screen in System Settings > Privacy & Security to use touch, pen and keyboard")
         }
 
+        let captureSource = windowFilter.map(ScreenCapturer.Settings.Source.window) ?? .display(displayID)
         let cap = ScreenCapturer(
-            settings: .init(displayID: displayID, width: w, height: h, fps: fps,
-                            showsCursor: !granted.contains(.clientCursor), captureAudio: audio),
+            settings: .init(source: captureSource, width: w, height: h, fps: fps,
+                            showsCursor: !viewOnly && !granted.contains(.clientCursor), captureAudio: audio),
             onVideo: { [weak self] pb, _ in self?.queue.async { self?.onCaptured(pb, streamID: sid) } },
             onAudio: { [weak self] sample in
                 guard let pcm = AudioConverter.s16le(sample) else { return }
@@ -472,17 +484,18 @@ public final class HostSession {
                 guard let self, self.streamID == sid else { return }
                 Log.error("\(error)")
                 self.noticeOnce(.capturePermissionMissing, "Screen capture failed: \(error)")
+                if viewOnly { self.close(error: "Could not share the selected window: \(error)", bye: .error) }
             }
         }
 
-        injector.setTarget(.init(displayID: displayID, streamWidth: w, streamHeight: h))
+        if !viewOnly { injector.setTarget(.init(displayID: displayID, streamWidth: w, streamHeight: h)) }
         if granted.contains(.clientCursor) {
             let send: (Frame) -> Void = { [weak self] f in self?.queue.async { self?.connection?.send(f) } }
             let c = CursorTracker(displayID: displayID, streamWidth: w, streamHeight: h, fps: fps, send: send)
             c.start()
             cursor = c
         }
-        if options.clipboard, clipboard == nil {
+        if !viewOnly, options.clipboard, clipboard == nil {
             let c = ClipboardSync { [weak self] f in self?.queue.async { self?.connection?.send(f) } }
             c.start()
             clipboard = c
@@ -491,7 +504,7 @@ public final class HostSession {
         phase = .streaming
         let si = StreamInfo(deviceName: result?.deviceName ?? "", authMode: result?.mode ?? .none, width: w, height: h,
                             refreshHz: fps, codec: codec, bitrateKbps: kbps, hardwareEncoder: enc.isHardware,
-                            mirroring: mirror, logicalWidth: Int(logical.width), logicalHeight: Int(logical.height))
+                            mirroring: mirror, viewOnly: viewOnly, logicalWidth: Int(logical.width), logicalHeight: Int(logical.height))
         streamInfo = si
         notify(.streaming(si))
     }

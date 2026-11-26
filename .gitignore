@@ -1,3 +1,5 @@
 tools/.venv/
 tools/.usethatscreen_ref_*.json
 .DS_Store
+ipad/UseThatScreen.xcodeproj/
+ipad/Info.plist

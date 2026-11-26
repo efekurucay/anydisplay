@@ -18,6 +18,11 @@ connecting.
 5. Choose a connection below. For an extended desktop, arrange the new screen in
    **System Settings → Displays** and drag a window across to it.
 
+To show one Mac window, select **Share a Window…** in the menu bar, choose a window,
+then manually connect under **USB** or **Wi-Fi**. The view-only connection shares just
+that window's image. **Use Desktop Mode for New Connections** restores desktop sharing
+and automatic USB connections. Disconnect and reconnect to change an active stream's source.
+
 ## Windows: Windows 10 (1809) or Windows 11
 
 Run the Windows installer and open **Use That Screen** from the Start menu. With the portable ZIP,

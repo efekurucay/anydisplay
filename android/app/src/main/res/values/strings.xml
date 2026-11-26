@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="stream_view_only">View only · The Mac is sharing one window</string>
     <string name="connect_pc">Connect to PC</string>
     <string name="connect_pc_detail">Pair over Wi-Fi first, then allow paired Android devices to connect in Use That Screen on Windows.</string>
     <string name="pc_address_hint">PC LAN or Tailscale IPv4 address</string>

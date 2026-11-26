@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
+import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.SurfaceHolder
 import android.view.View
@@ -57,6 +58,7 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
     private var lastBytes = 0L
     private var lastStatsAt = 0L
     private var keyboardShown = false
+    private var viewOnly = false
     private lateinit var clipboard: ClipboardManager
 
     private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { pushClipboard() }
@@ -170,7 +172,7 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
     })
 
     private fun buildMenu() {
-        menu.setItems(listOf(
+        val items = listOf(
             FloatingMenu.Item("mode", modeIcon(router.mode), getString(R.string.menu_touch_mode)) {
                 router.mode = router.mode.next()
                 menu.setIcon("mode", modeIcon(router.mode), modeLabel(router.mode))
@@ -191,7 +193,8 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
             FloatingMenu.Item("paste", R.drawable.ic_paste, getString(R.string.menu_paste)) { shortcut(HidKeys.letter('v'), 0) },
             FloatingMenu.Item("esc", 0, getString(R.string.menu_escape), text = "Esc") { tapKey(HidKeys.ESCAPE, 0) },
             FloatingMenu.Item("disconnect", R.drawable.ic_power, getString(R.string.disconnect)) { confirmDisconnect() },
-        ))
+        )
+        menu.setItems(if (viewOnly) items.filter { it.id in setOf("zoom", "fit", "disconnect") } else items)
         menu.setIcon("mode", modeIcon(router.mode), modeLabel(router.mode))
     }
 
@@ -242,6 +245,10 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
     @Suppress("DEPRECATION") // ACTION_MULTIPLE still carries committed text from some IMEs and keyboards.
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val code = event.keyCode
+        if (session?.config?.mouseSideButtons == true && event.isFromSource(InputDevice.SOURCE_MOUSE) &&
+            (code == KeyEvent.KEYCODE_BACK || code == KeyEvent.KEYCODE_FORWARD)
+        ) return true // Android also emits a motion event for the mouse button.
+        if (viewOnly) return super.dispatchKeyEvent(event)
         if (code == KeyEvent.KEYCODE_BACK || code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN ||
             code == KeyEvent.KEYCODE_VOLUME_MUTE || code == KeyEvent.KEYCODE_POWER || code == KeyEvent.KEYCODE_HOME ||
             code == KeyEvent.KEYCODE_APP_SWITCH
@@ -268,6 +275,7 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
     // ------------------------------------------------------------ clipboard
 
     private fun pushClipboard() {
+        if (session?.config?.viewOnly == true) return
         val text = try {
             clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString()
         } catch (_: Exception) {
@@ -284,12 +292,25 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
         } else {
             clipboard.removePrimaryClipChangedListener(clipListener)
             router.cancelFingers()
+            router.cancelMouse()
         }
     }
 
     // ------------------------------------------------------------ video
 
     private fun applyConfig(cfg: StreamConfig) {
+        router.mouseSideButtons = cfg.mouseSideButtons
+        if (viewOnly != cfg.viewOnly) {
+            viewOnly = cfg.viewOnly
+            layout.touchHandler = if (viewOnly) null else router::onTouchEvent
+            layout.genericHandler = if (viewOnly) null else router::onGenericMotionEvent
+            if (viewOnly) {
+                if (keyboardShown) toggleKeyboard()
+                Snackbar.make(layout, R.string.stream_view_only, Snackbar.LENGTH_SHORT).show()
+            }
+            buildMenu()
+            menu.post { menu.clampIntoParent() }
+        }
         layout.setStreamSize(cfg.width, cfg.height)
         layout.surfaceView.holder.setFixedSize(cfg.width, cfg.height)
         router.streamWidth = cfg.width

@@ -100,6 +100,7 @@ pub mod host_caps {
     pub const NATIVE_PEN: u32 = 1 << 1;
     pub const CLIPBOARD: u32 = 1 << 2;
     pub const AUDIO: u32 = 1 << 3;
+    pub const MOUSE_SIDE_BUTTONS: u32 = 1 << 4;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

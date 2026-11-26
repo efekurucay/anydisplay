@@ -37,13 +37,13 @@ Use That Screen is a free, MIT-licensed alternative:
 
 | | |
 |---|---|
-| 🖥️ **Display** | Extended or mirrored desktop, HiDPI (Retina) on macOS, up to 120 Hz, follows device rotation |
+| 🖥️ **Display** | Extended or mirrored desktop, view-only window sharing on macOS, HiDPI (Retina) on macOS, up to 120 Hz, follows device rotation |
 | 🎞️ **Video** | Hardware H.264 and HEVC on both ends, low-latency encoder and decoder settings, at most 3 frames in flight, keyframe on request |
 | ✍️ **Pen** | Pressure, tilt, hover, eraser and barrel button. Batched samples keep strokes smooth |
 | 👆 **Touch** | Direct multi-touch (up to 10 fingers on Windows), trackpad mode with tap, drag, two-finger scroll and momentum, pen-only mode, palm rejection |
 | ⌨️ **Keyboard** | Hardware keyboards and the on-screen keyboard, including non-Latin text. Toolbar shortcuts for undo, redo, copy, paste and Esc |
 | 🔊 **Audio** | Computer audio plays on the device |
-| 🖱️ **Cursor** | Drawn on the device as a separate layer, so it stays sharp and responsive |
+| 🖱️ **Mouse** | Client-rendered cursor, hardware scroll, and Back and Forward buttons on supported mice |
 | 📋 **Clipboard** | Text clipboard sync in both directions |
 | 🔒 **Security** | P-256 key exchange, a 6-digit code to compare when pairing, AES-256-GCM on every Wi-Fi frame |
 | 📡 **Discovery** | Finds devices with Bonjour / mDNS on Wi-Fi and with `adb` on USB |
@@ -86,6 +86,8 @@ Tap **±** again to resume sending touch input to the computer at the current zo
 the full display. For Android-initiated Wi-Fi sessions on Windows, see the [Windows guide](windows/README.md#connect-from-android).
 
 The full wire format, handshake and key schedule are in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+
+A build-from-source [iPad client](ipad/README.md) can view an extended or mirrored desktop over Wi-Fi.
 
 ## Download
 

@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "UseThatScreen",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "UseThatScreenProtocol", targets: ["UseThatScreenProtocol"]),
         .executable(name: "usethatscreen", targets: ["usethatscreen"]),

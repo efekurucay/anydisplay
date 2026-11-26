@@ -207,6 +207,8 @@ data class StreamConfig(
 ) {
     val audio get() = flags and Proto.FLAG_AUDIO != 0
     val clientCursor get() = flags and Proto.FLAG_CLIENT_CURSOR != 0
+    val mouseSideButtons get() = hostCaps and (1L shl 4) != 0L
+    val viewOnly get() = hostCaps and (1L shl 5) != 0L
 
     companion object {
         fun decode(body: ByteArray): StreamConfig {
@@ -325,6 +327,8 @@ object MouseButton {
     const val LEFT = 0
     const val RIGHT = 1
     const val MIDDLE = 2
+    const val BACK = 3
+    const val FORWARD = 4
 }
 
 object ScrollPhase {

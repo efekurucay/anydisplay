@@ -18,11 +18,16 @@ public enum CaptureError: Error, CustomStringConvertible {
     }
 }
 
-/// Captures one display with ScreenCaptureKit, scaled to the stream size, as 4:2:0 bi-planar YCbCr pixel buffers.
+/// Captures one display or window with ScreenCaptureKit as 4:2:0 bi-planar YCbCr pixel buffers.
 /// Optionally captures system audio as 48 kHz stereo.
 public final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate {
     public struct Settings {
-        public var displayID: CGDirectDisplayID
+        public enum Source {
+            case display(CGDirectDisplayID)
+            case window(SCContentFilter)
+        }
+
+        public var source: Source
         public var width: Int
         public var height: Int
         public var fps: Int
@@ -49,33 +54,39 @@ public final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate {
         self.onStop = onStop
     }
 
-    /// Looks the display up (retrying while a new virtual display registers) and starts capturing.
     public func start(completion: @escaping (Error?) -> Void) {
-        find(attempt: 0) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .failure(let e): completion(e)
-            case .success(let display): self.start(display: display, completion: completion)
+        switch settings.source {
+        case .window(let filter):
+            start(filter: filter, windowOnly: true, completion: completion)
+        case .display(let id):
+            findDisplay(id, attempt: 0) { [weak self] result in
+                switch result {
+                case .failure(let e): completion(e)
+                case .success(let display):
+                    self?.start(filter: SCContentFilter(display: display, excludingWindows: []),
+                                windowOnly: false, completion: completion)
+                }
             }
         }
     }
 
-    private func find(attempt: Int, completion: @escaping (Result<SCDisplay, Error>) -> Void) {
+    private func findDisplay(_ id: CGDirectDisplayID, attempt: Int, completion: @escaping (Result<SCDisplay, Error>) -> Void) {
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { content, error in
-            if let display = content?.displays.first(where: { $0.displayID == self.settings.displayID }) {
+            if let display = content?.displays.first(where: { $0.displayID == id }) {
                 completion(.success(display))
             } else if attempt < 30 {
-                DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) { self.find(attempt: attempt + 1, completion: completion) }
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+                    self.findDisplay(id, attempt: attempt + 1, completion: completion)
+                }
             } else if let error {
                 completion(.failure(CaptureError.content(error)))
             } else {
-                completion(.failure(CaptureError.displayNotFound(self.settings.displayID)))
+                completion(.failure(CaptureError.displayNotFound(id)))
             }
         }
     }
 
-    private func start(display: SCDisplay, completion: @escaping (Error?) -> Void) {
-        let filter = SCContentFilter(display: display, excludingWindows: [])
+    private func start(filter: SCContentFilter, windowOnly: Bool, completion: @escaping (Error?) -> Void) {
         let config = SCStreamConfiguration()
         config.width = settings.width
         config.height = settings.height
@@ -86,6 +97,11 @@ public final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate {
         config.showsCursor = settings.showsCursor
         config.queueDepth = 5
         config.scalesToFit = true
+        if windowOnly {
+            config.preservesAspectRatio = true
+            config.ignoreShadowsSingleWindow = true
+            if #available(macOS 14.2, *) { config.includeChildWindows = false }
+        }
         if settings.captureAudio {
             config.capturesAudio = true
             config.sampleRate = Self.audioSampleRate

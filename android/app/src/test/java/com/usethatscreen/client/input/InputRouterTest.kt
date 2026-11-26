@@ -1,10 +1,12 @@
 package com.usethatscreen.client.input
 
 import android.graphics.RectF
+import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import com.usethatscreen.client.data.TouchMode
 import com.usethatscreen.client.protocol.MouseAction
+import com.usethatscreen.client.protocol.MouseButton
 import com.usethatscreen.client.protocol.PenAction
 import com.usethatscreen.client.protocol.Proto
 import com.usethatscreen.client.protocol.TouchAction
@@ -59,6 +61,38 @@ class InputRouterTest {
 
     private fun penActions() = sent.filter { it.type == Proto.PEN }.map { it.body[1].toInt() }
     private fun touchActions() = sent.filter { it.type == Proto.TOUCH }.map { it.body[2].toInt() }
+
+    private fun mouse(action: Int, pressed: Int) {
+        val properties = MotionEvent.PointerProperties().apply { toolType = MotionEvent.TOOL_TYPE_MOUSE }
+        val coordinates = MotionEvent.PointerCoords().apply { x = 100f; y = 100f }
+        val event = MotionEvent.obtain(1000, 1000, action, 1, arrayOf(properties), arrayOf(coordinates),
+            0, pressed, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0)
+        try {
+            assertTrue(router.onGenericMotionEvent(event))
+        } finally {
+            event.recycle()
+        }
+    }
+
+    @Test
+    fun sideButtonsRequireHostSupportAndReleaseOnFocusLoss() {
+        mouse(MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.BUTTON_BACK)
+        mouse(MotionEvent.ACTION_BUTTON_RELEASE, 0)
+        assertTrue(sent.isEmpty())
+
+        router.mouseSideButtons = true
+        mouse(MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.BUTTON_BACK)
+        mouse(MotionEvent.ACTION_BUTTON_RELEASE, 0)
+        mouse(MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.BUTTON_FORWARD)
+        router.cancelMouse()
+        mouse(MotionEvent.ACTION_BUTTON_RELEASE, 0)
+        assertTrue(sent.all { it.type == Proto.MOUSE })
+        assertEquals(
+            listOf(MouseAction.DOWN to MouseButton.BACK, MouseAction.UP to MouseButton.BACK,
+                MouseAction.DOWN to MouseButton.FORWARD, MouseAction.UP to MouseButton.FORWARD),
+            sent.map { it.body[0].toInt() to it.body[1].toInt() },
+        )
+    }
 
     private fun startMixedGesture() {
         event(MotionEvent.ACTION_DOWN, 1000, mixed = false)
