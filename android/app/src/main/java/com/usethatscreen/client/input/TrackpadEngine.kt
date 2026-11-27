@@ -198,7 +198,12 @@ class TrackpadEngine(private val sink: Sink, private val touchSlopPx: Float = 12
         sink.mouse(MouseAction.UP, button, cursorX, cursorY)
     }
 
-    fun setCursor(nx: Float, ny: Float) { cursorX = nx.coerceIn(0f, 1f); cursorY = ny.coerceIn(0f, 1f) }
+    fun setCursor(nx: Float, ny: Float) {
+        // Host feedback can lag behind local movement during a gesture.
+        if (fingers.isNotEmpty()) return
+        cursorX = nx.coerceIn(0f, 1f)
+        cursorY = ny.coerceIn(0f, 1f)
+    }
 
     companion object {
         const val TAP_MS = 250L

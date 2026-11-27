@@ -81,6 +81,34 @@ class InputLogicTest {
     }
 
     @Test
+    fun hostPositionDoesNotResetCursorDuringTapDrag() {
+        val r = Rec()
+        val e = engine(r)
+        e.setCursor(0.6f, 0.4f)
+        e.down(0, 100f, 100f, 0)
+        e.up(0, 80)
+        r.events.clear()
+
+        e.down(0, 100f, 100f, 150)
+        e.setCursor(0f, 0f)
+        assertTrue(r.events.isEmpty())
+        assertEquals(0.6f, e.cursorX, 1e-6f)
+
+        e.move(0, 120f, 100f)
+        e.commitMove(400, mapOf(0 to (100f to 100f)))
+        val dragX = e.cursorX
+        assertTrue(dragX > 0.6f)
+        e.setCursor(0f, 0f)
+        assertEquals(dragX, e.cursorX, 1e-6f)
+        assertEquals(0.4f, e.cursorY, 1e-6f)
+
+        e.up(0, 420)
+        assertEquals(listOf("M1/0", "M0/0", "M2/0"), r.events)
+        e.setCursor(0f, 0f)
+        assertEquals(0f, e.cursorX, 1e-6f)
+    }
+
+    @Test
     fun twoFingerTapClicksRight() {
         val r = Rec()
         val e = engine(r)

@@ -28,7 +28,9 @@ class CursorOverlay(context: Context) : View(context), CursorSink {
         posX = x
         posY = y
         this.visible = visible
-        onPosition?.invoke(x.toFloat() / streamWidth.coerceAtLeast(1), y.toFloat() / streamHeight.coerceAtLeast(1))
+        if (visible) post {
+            onPosition?.invoke(x.toFloat() / streamWidth.coerceAtLeast(1), y.toFloat() / streamHeight.coerceAtLeast(1))
+        }
         postInvalidateOnAnimation()
     }
 
