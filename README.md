@@ -220,6 +220,7 @@ These are specific test reports, not a guarantee for every feature or device.
 | Huawei P30 Pro | MacBook Pro | USB and Wi-Fi video, pairing and touch; 60 fps at 2340×1080 | Maintainer testing; measurements above |
 | TCL NXTPAPER 11 Plus (9469X), Android 15 | Windows 11 | USB discovery with an empty serial, handshake, hardware HEVC stream at 2200×1440 | [@dionisvl, PR #3](https://github.com/efekurucay/usethatscreen/pull/3) |
 | Xiaomi Redmi Note 12 Pro, Android 14 (HyperOS 2.0.16.0) | Mac mini M4, macOS Tahoe 26.6.2 (25G83) | USB and Wi-Fi connection at 1080×2400, with 56–60 fps over USB (ADB) and about 40–58 fps over Wi-Fi | [@motionkartik, issue #6](https://github.com/efekurucay/usethatscreen/issues/6) |
+| Amazon Fire TV Stick 4K Max (2nd generation) | Windows 11 Home 26H2 | Wi-Fi mirroring at 1920×1080, 60 Hz, hardware HEVC | [@dionisvl, issue #16](https://github.com/efekurucay/usethatscreen/issues/16) |
 
 Tried another device? [Send a device report](https://github.com/efekurucay/usethatscreen/issues/new?template=device_report.yml).
 Real stylus pressure/tilt, Windows touch, audio and clipboard need more hardware reports.
