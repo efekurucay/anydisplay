@@ -189,8 +189,9 @@
           </div>
           <h3>Actually extend.</h3>
           <p>
-            A real virtual monitor on Mac. On Windows, add the optional Virtual
-            Display Driver to extend, or mirror an existing screen.
+            A real virtual monitor on Mac, or share a single window. On
+            Windows, add the optional Virtual Display Driver to extend, or
+            mirror an existing screen.
           </p>
         </article>
         <article class="feature">
@@ -225,7 +226,7 @@
               with every device report.
             </p>
             <div class="measurement">
-              <strong>60<span>fps</span></strong>
+              <strong data-roll>60<span class="unit">fps</span></strong>
               <div>
                 Measured over USB & Wi-Fi<br /><small
                   >Huawei P30 Pro + MacBook Pro</small
@@ -271,6 +272,7 @@
             <a
               class="button dark"
               href="https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk"
+              data-download="android"
               >Download APK <span aria-hidden="true">↓</span></a
             ><small
               >Allow installation from your browser when Android asks.</small
@@ -285,6 +287,7 @@
             <a
               class="button outline"
               href="https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-macOS.zip"
+              data-download="mac"
               >Download for Mac <span aria-hidden="true">↓</span></a
             ><small
               >Menu bar app. Not notarized yet — see the setup steps
@@ -300,6 +303,7 @@
             <a
               class="button outline"
               href="https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-windows-x64-setup.exe"
+              data-download="windows"
               >Download for Windows <span aria-hidden="true">↓</span></a
             ><small
               >Desktop app with an optional display driver for extend mode.</small
@@ -324,6 +328,7 @@
             </p>
             <div
               class="platform-switch"
+              data-active="mac"
               role="group"
               aria-label="Choose your computer"
             >
@@ -584,6 +589,19 @@
             </p>
           </details>
           <details>
+            <summary>Does it work on iPad?</summary>
+            <p>
+              An early iPad viewer (iPadOS 17+) shows an extended or mirrored
+              desktop over Wi-Fi. You build it from source with Xcode for now,
+              and it doesn’t send touch, Apple Pencil or keyboard input back
+              yet.
+              <a
+                href="https://github.com/efekurucay/usethatscreen/blob/main/ipad/README.md"
+                >Build and test it.</a
+              >
+            </p>
+          </details>
+          <details>
             <summary>How finished is it?</summary>
             <p>
               It’s an early project. Mac-to-Android streaming has been tested on
@@ -620,5 +638,6 @@
         >
       </div>
     </footer>
+    <div class="toast-region" aria-live="polite"></div>
   </body>
 </html>
