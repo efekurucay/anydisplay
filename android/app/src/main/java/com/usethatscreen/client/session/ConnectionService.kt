@@ -318,6 +318,7 @@ class ConnectionService : Service(), SessionHub.Listener {
             start(context, ACTION_CONNECT_PC, Intent().putExtra(EXTRA_PC_ADDRESS, address))
 
         fun createChannels(context: Context) {
+            if (Build.VERSION.SDK_INT < 26) return
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(NotificationChannel(CHANNEL_SERVICE, context.getString(R.string.channel_connection), NotificationManager.IMPORTANCE_LOW))
             nm.createNotificationChannel(NotificationChannel(CHANNEL_PAIRING, context.getString(R.string.channel_pairing), NotificationManager.IMPORTANCE_HIGH))

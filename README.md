@@ -11,7 +11,7 @@ USB or Wi-Fi · hardware H.264 / HEVC · pressure-sensitive pen · encrypted pai
 [![CI](https://github.com/efekurucay/usethatscreen/actions/workflows/ci.yml/badge.svg)](https://github.com/efekurucay/usethatscreen/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/efekurucay/usethatscreen?include_prereleases)](https://github.com/efekurucay/usethatscreen/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Android 8.0+](https://img.shields.io/badge/client-Android%208.0%2B-3DDC84?logo=android&logoColor=white)
+![Android 7.1+](https://img.shields.io/badge/client-Android%207.1%2B-3DDC84?logo=android&logoColor=white)
 ![macOS 14+](https://img.shields.io/badge/host-macOS%2014%2B-000000?logo=apple&logoColor=white)
 ![Windows 10/11](https://img.shields.io/badge/host-Windows%2010%2F11-0078D4?logo=windows&logoColor=white)
 
@@ -93,7 +93,7 @@ A build-from-source [iPad client](ipad/README.md) can view an extended or mirror
 
 | Download | For |
 |---|---|
-| [**UseThatScreen.apk**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk) | The Android phone or tablet (Android 8.0+) |
+| [**UseThatScreen.apk**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk) | The Android phone or tablet (Android 7.1+) |
 | [**UseThatScreen-macOS.zip**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-macOS.zip) | Mac (Apple silicon and Intel, macOS 14+) |
 | [**Use That Screen Windows setup**](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-windows-x64-setup.exe) ([portable ZIP](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen-windows-x64.zip)) | Windows 10 (1809) / 11, experimental |
 
@@ -121,7 +121,7 @@ same 6-digit code on both screens; accept it on both.
 
 ### 1. Android app
 
-Requires Android 8.0 or newer.
+Requires Android 7.1 or newer.
 
 ```sh
 cd android

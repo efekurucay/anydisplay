@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.TooltipCompat
 import com.google.android.material.card.MaterialCardView
 import com.usethatscreen.client.R
 import kotlin.math.abs
@@ -50,7 +51,7 @@ class FloatingMenu(context: Context, private val onMoved: (Float, Float) -> Unit
         setImageResource(icon)
         imageTintList = ColorStateList.valueOf(fg)
         contentDescription = label
-        tooltipText = label
+        TooltipCompat.setTooltipText(this, label)
         val out = TypedValue()
         context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, out, true)
         setBackgroundResource(out.resourceId)
@@ -86,7 +87,7 @@ class FloatingMenu(context: Context, private val onMoved: (Float, Float) -> Unit
         (buttons[id] as? ImageButton)?.apply {
             setImageResource(icon)
             contentDescription = label
-            tooltipText = label
+            TooltipCompat.setTooltipText(this, label)
         }
     }
 

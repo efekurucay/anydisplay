@@ -1,7 +1,7 @@
 # Your first Use That Screen connection
 
 Install [UseThatScreen.apk](https://github.com/efekurucay/usethatscreen/releases/latest/download/UseThatScreen.apk)
-on an Android 8.0+ phone or tablet, and download the host for your computer from
+on an Android 7.1+ phone or tablet, and download the host for your computer from
 [the latest release](https://github.com/efekurucay/usethatscreen/releases/latest).
 Install a matching release on both devices. Open the Android app and leave it on screen while
 connecting.

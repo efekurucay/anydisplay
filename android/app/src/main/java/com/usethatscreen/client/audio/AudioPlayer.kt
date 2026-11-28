@@ -3,6 +3,7 @@ package com.usethatscreen.client.audio
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.os.Build
 import com.usethatscreen.client.Elog
 
 /**
@@ -39,7 +40,11 @@ class AudioPlayer {
                     .setSampleRate(rate).setChannelMask(mask).build())
                 .setBufferSizeInBytes(size)
                 .setTransferMode(AudioTrack.MODE_STREAM)
-                .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                .apply {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                    }
+                }
                 .build()
                 .also { it.play() }
         } catch (e: Exception) {

@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.usethatscreen.client"
-        minSdk = 26
+        minSdk = 25
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.2.4"
+        versionCode = 15
+        versionName = "0.2.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
