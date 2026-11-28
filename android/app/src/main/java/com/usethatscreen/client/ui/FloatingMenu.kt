@@ -27,6 +27,9 @@ class FloatingMenu(context: Context, private val onMoved: (Float, Float) -> Unit
     private val buttons = HashMap<String, View>()
     private val dp = resources.displayMetrics.density
     private val fg = 0xFFE8EAF6.toInt()
+    // The panel may shift to fit on screen without moving the collapsed button.
+    private var anchorX = 0f
+    private var anchorY = 0f
     var expanded = false
         private set
 
@@ -102,15 +105,31 @@ class FloatingMenu(context: Context, private val onMoved: (Float, Float) -> Unit
         }
     }
 
-    fun toggleExpanded() {
+    private fun toggleExpanded() {
         orient()
         expanded = !expanded
         itemsBox.visibility = if (expanded) View.VISIBLE else View.GONE
         handle.setImageResource(if (expanded) R.drawable.ic_close else R.drawable.ic_menu)
-        post { clampIntoParent() }
     }
 
-    fun clampIntoParent() {
+    fun placeAt(x: Float, y: Float) {
+        anchorX = x
+        anchorY = y
+        clampIntoParent()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        clampIntoParent()
+    }
+
+    private fun clampIntoParent() {
+        translationX = anchorX
+        translationY = anchorY
+        constrainTranslation()
+    }
+
+    private fun constrainTranslation() {
         val p = parent as? View ?: return
         translationX = translationX.coerceIn(0f, (p.width - width).toFloat().coerceAtLeast(0f))
         translationY = translationY.coerceIn(0f, (p.height - height).toFloat().coerceAtLeast(0f))
@@ -137,14 +156,21 @@ class FloatingMenu(context: Context, private val onMoved: (Float, Float) -> Unit
                     if (dragging) {
                         translationX = startTx + dx
                         translationY = startTy + dy
-                        clampIntoParent()
+                        constrainTranslation()
                     }
                 }
                 MotionEvent.ACTION_UP -> {
                     handle.isPressed = false
-                    if (dragging) onMoved(translationX, translationY) else toggleExpanded()
+                    if (dragging) {
+                        if (translationX != startTx) anchorX = translationX
+                        if (translationY != startTy) anchorY = translationY
+                        onMoved(anchorX, anchorY)
+                    } else toggleExpanded()
                 }
-                MotionEvent.ACTION_CANCEL -> handle.isPressed = false
+                MotionEvent.ACTION_CANCEL -> {
+                    handle.isPressed = false
+                    clampIntoParent()
+                }
             }
             true
         }

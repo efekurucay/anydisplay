@@ -40,7 +40,9 @@ class Settings(context: Context) {
     val autoStart: Boolean get() = prefs.getBoolean(K_AUTO_START, true)
     val orientation: StreamOrientation get() = StreamOrientation.of(prefs.getString(K_ORIENTATION, "landscape"))
 
-    val touchMode: TouchMode get() = TouchMode.of(prefs.getString(K_TOUCH_MODE, "direct"))
+    var touchMode: TouchMode
+        get() = TouchMode.of(prefs.getString(K_TOUCH_MODE, "direct"))
+        set(mode) { prefs.edit().putString(K_TOUCH_MODE, mode.key).apply() }
 
     var menuPosition: Pair<Float, Float>?
         get() = if (prefs.contains(K_MENU_X)) prefs.getFloat(K_MENU_X, 0f) to prefs.getFloat(K_MENU_Y, 0f) else null

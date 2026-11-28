@@ -148,14 +148,10 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
     private fun placeMenu() {
         layout.post {
             val pos = settings.menuPosition
-            if (pos != null) {
-                menu.translationX = pos.first
-                menu.translationY = pos.second
-            } else {
-                menu.translationX = (layout.width - menu.width - 16 * resources.displayMetrics.density)
-                menu.translationY = (layout.height - menu.height) / 3f
-            }
-            menu.clampIntoParent()
+            menu.placeAt(
+                pos?.first ?: (layout.width - menu.width - 16 * resources.displayMetrics.density),
+                pos?.second ?: (layout.height - menu.height) / 3f,
+            )
         }
     }
 
@@ -175,6 +171,7 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
         val items = listOf(
             FloatingMenu.Item("mode", modeIcon(router.mode), getString(R.string.menu_touch_mode)) {
                 router.mode = router.mode.next()
+                settings.touchMode = router.mode
                 menu.setIcon("mode", modeIcon(router.mode), modeLabel(router.mode))
                 Snackbar.make(layout, modeLabel(router.mode), Snackbar.LENGTH_SHORT).show()
             },
@@ -309,7 +306,6 @@ class StreamActivity : BaseActivity(), SurfaceHolder.Callback, VideoDecoder.List
                 Snackbar.make(layout, R.string.stream_view_only, Snackbar.LENGTH_SHORT).show()
             }
             buildMenu()
-            menu.post { menu.clampIntoParent() }
         }
         layout.setStreamSize(cfg.width, cfg.height)
         layout.surfaceView.holder.setFixedSize(cfg.width, cfg.height)
